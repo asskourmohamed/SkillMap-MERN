@@ -5,10 +5,9 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import DiscoveryPage from './pages/DiscoveryPage';
-import ProfilePage from './pages/MyProfilePage';
 import MyProfilePage from './pages/MyProfilePage';
+import SettingsPage from './pages/SettingsPage'; // Ajouter cette ligne
 
-// Route protégée
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
   
@@ -39,12 +38,17 @@ function AppRoutes() {
       } />
       <Route path="/app/profile/:id" element={
         <ProtectedRoute>
-          <ProfilePage />
+          <MyProfilePage />
         </ProtectedRoute>
       } />
       <Route path="/app/my-profile" element={
         <ProtectedRoute>
           <MyProfilePage />
+        </ProtectedRoute>
+      } />
+      <Route path="/app/settings" element={  
+        <ProtectedRoute>
+          <SettingsPage />
         </ProtectedRoute>
       } />
       <Route path="/app/profile" element={
