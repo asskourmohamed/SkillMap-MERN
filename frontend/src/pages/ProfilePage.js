@@ -1,50 +1,52 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import AppHeader from '../components/Layout/AppHeader';
-import { authService } from '../services/api';
+import { profileService } from '../services/api';
 
-const MyProfilePage = () => {
+const ProfilePage = () => {
+  const { id } = useParams(); // Récupère l'ID depuis l'URL
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('about');
+  const [currentUser, setCurrentUser] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchMyProfile();
-  }, []);
+    // Récupérer l'utilisateur connecté
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      setCurrentUser(JSON.parse(userStr));
+    }
+    
+    console.log('🔍 ID du profil demandé:', id);
+    fetchProfile();
+  }, [id]); // Recharger quand l'ID change
 
-  const fetchMyProfile = async () => {
+  const fetchProfile = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const userStr = localStorage.getItem('user');
-      if (!userStr) {
-        navigate('/login');
-        return;
-      }
-      
-      const response = await authService.getMe();
+      console.log('📡 Chargement du profil:', id);
+      const response = await profileService.getById(id);
+      console.log('✅ Profil chargé:', response.data.data);
       setProfile(response.data.data);
     } catch (error) {
-      console.error('Erreur chargement profil:', error);
-      setError(error.response?.data?.error || 'Erreur de chargement');
-      
-      if (error.response?.status === 401) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        navigate('/login');
-      }
+      console.error('❌ Erreur chargement profil:', error);
+      setError('Profil non trouvé');
     } finally {
       setLoading(false);
     }
   };
 
+  // Vérifier si c'est notre propre profil
+  const isOwnProfile = currentUser && profile && currentUser._id === profile._id;
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background-light dark:bg-background-dark">
-        <AppHeader user={profile} />
+        <AppHeader user={currentUser} />
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
@@ -55,11 +57,17 @@ const MyProfilePage = () => {
   if (error || !profile) {
     return (
       <div className="min-h-screen bg-background-light dark:bg-background-dark">
-        <AppHeader />
+        <AppHeader user={currentUser} />
         <div className="flex flex-col justify-center items-center h-64">
           <span className="material-symbols-outlined text-6xl text-red-500 mb-4">error</span>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Error</h2>
-          <p className="text-slate-600 dark:text-slate-400">{error || 'Profile not found'}</p>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Profile Not Found</h2>
+          <p className="text-slate-600 dark:text-slate-400">{error || 'The profile you\'re looking for doesn\'t exist'}</p>
+          <Link 
+            to="/app/discovery" 
+            className="mt-4 px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
+          >
+            Back to Discovery
+          </Link>
         </div>
       </div>
     );
@@ -67,9 +75,18 @@ const MyProfilePage = () => {
 
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark">
-      <AppHeader user={profile} />
+      <AppHeader user={currentUser} />
       
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Bouton retour */}
+        <button 
+          onClick={() => navigate('/app/discovery')}
+          className="mb-4 flex items-center gap-2 text-slate-600 hover:text-primary transition-colors"
+        >
+          <span className="material-symbols-outlined">arrow_back</span>
+          Back to Discovery
+        </button>
+
         {/* Profile Header */}
         <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden mb-8">
           <div className="h-48 w-full bg-gradient-to-r from-primary to-sky-600 relative">
@@ -88,7 +105,9 @@ const MyProfilePage = () => {
                     src={profile.profilePicture || "https://lh3.googleusercontent.com/aida-public/AB6AXuATPvGJ8NLXfW2ZpfG6onwZx-RSG_oZg80XgZpZ8qEDgVZpSiR9XFRJgoSkaciqVwWfh4UbMAEW4LkdRy5Uvf2V6yqx5paSTTK7VA9Mr0WGUwykkQ3495cxVGvl03Re9qkZyCBhe010QrcP9yzDj3rm0KeAdwZAsoj4Mah_cuQ9z4Msd4JExvEfMmw5p4-VKE98oVweG30H9-g3Yr_0aCZzC9FwKdE2VoZ_VxCEVWKxNn5Wdj2huqEhN2xf9RKuCAvvzntCgXTs7Oif"}
                   />
                 </div>
-                <span className="absolute bottom-2 right-2 h-5 w-5 bg-green-500 border-2 border-white dark:border-slate-900 rounded-full"></span>
+                {profile.openForWork && (
+                  <span className="absolute bottom-2 right-2 h-5 w-5 bg-green-500 border-2 border-white dark:border-slate-900 rounded-full"></span>
+                )}
               </div>
               
               <div className="flex-1 pb-2">
@@ -106,7 +125,37 @@ const MyProfilePage = () => {
                     <span className="material-symbols-outlined text-sm">mail</span>
                     {profile.email}
                   </span>
+                  {profile.website && (
+                    <a href={profile.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-primary font-semibold hover:underline">
+                      <span className="material-symbols-outlined text-sm">link</span>
+                      {profile.website.replace('https://', '')}
+                    </a>
+                  )}
                 </div>
+              </div>
+              
+              {/* Boutons d'action - différents si c'est notre profil */}
+              <div className="flex gap-3 pb-2">
+                {isOwnProfile ? (
+                  <Link 
+                    to="/app/settings"
+                    className="px-6 py-2.5 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 transition-all flex items-center gap-2"
+                  >
+                    <span className="material-symbols-outlined text-sm">edit</span>
+                    Edit Profile
+                  </Link>
+                ) : (
+                  <>
+                    <button className="px-6 py-2.5 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 transition-all flex items-center gap-2">
+                      <span className="material-symbols-outlined text-sm">person_add</span>
+                      Connect
+                    </button>
+                    <button className="px-6 py-2.5 bg-primary/10 text-primary font-semibold rounded-lg hover:bg-primary/20 transition-all flex items-center gap-2">
+                      <span className="material-symbols-outlined text-sm">chat</span>
+                      Message
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -116,7 +165,7 @@ const MyProfilePage = () => {
         <div className="flex border-b border-slate-200 dark:border-slate-800 overflow-x-auto no-scrollbar mb-8">
           <button
             onClick={() => setActiveTab('about')}
-            className={`px-6 py-3 border-b-2 font-bold text-sm flex items-center gap-2 ${
+            className={`px-6 py-3 border-b-2 font-bold text-sm flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'about'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
@@ -128,7 +177,7 @@ const MyProfilePage = () => {
           
           <button
             onClick={() => setActiveTab('skills')}
-            className={`px-6 py-3 border-b-2 font-bold text-sm flex items-center gap-2 ${
+            className={`px-6 py-3 border-b-2 font-bold text-sm flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'skills'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
@@ -140,7 +189,7 @@ const MyProfilePage = () => {
           
           <button
             onClick={() => setActiveTab('projects')}
-            className={`px-6 py-3 border-b-2 font-bold text-sm flex items-center gap-2 ${
+            className={`px-6 py-3 border-b-2 font-bold text-sm flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'projects'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
@@ -152,7 +201,7 @@ const MyProfilePage = () => {
           
           <button
             onClick={() => setActiveTab('experience')}
-            className={`px-6 py-3 border-b-2 font-bold text-sm flex items-center gap-2 ${
+            className={`px-6 py-3 border-b-2 font-bold text-sm flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'experience'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
@@ -163,14 +212,13 @@ const MyProfilePage = () => {
           </button>
         </div>
 
-        {/* Tab Content */}
+        {/* Tab Content - À compléter selon vos besoins */}
         <div className="space-y-8">
-          {/* About Tab */}
           {activeTab === 'about' && (
             <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
               <h3 className="text-lg font-bold mb-4">About</h3>
               <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                {profile.bio || 'No bio provided yet.'}
+                {profile.bio || 'No bio provided.'}
               </p>
               
               <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -186,7 +234,6 @@ const MyProfilePage = () => {
             </div>
           )}
 
-          {/* Skills Tab */}
           {activeTab === 'skills' && (
             <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
               <h3 className="text-lg font-bold mb-4">Skills</h3>
@@ -211,12 +258,11 @@ const MyProfilePage = () => {
                   ))}
                 </div>
               ) : (
-                <p className="text-slate-500 text-center py-8">No skills added yet</p>
+                <p className="text-slate-500 text-center py-8">No skills listed</p>
               )}
             </div>
           )}
 
-          {/* Projects Tab */}
           {activeTab === 'projects' && (
             <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
               <h3 className="text-lg font-bold mb-4">Projects</h3>
@@ -247,12 +293,11 @@ const MyProfilePage = () => {
                   ))}
                 </div>
               ) : (
-                <p className="text-slate-500 text-center py-8">No projects added yet</p>
+                <p className="text-slate-500 text-center py-8">No projects listed</p>
               )}
             </div>
           )}
 
-          {/* Experience Tab */}
           {activeTab === 'experience' && (
             <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
               <h3 className="text-lg font-bold mb-4">Work Experience</h3>
@@ -278,7 +323,7 @@ const MyProfilePage = () => {
                   ))}
                 </div>
               ) : (
-                <p className="text-slate-500 text-center py-8">No experience added yet</p>
+                <p className="text-slate-500 text-center py-8">No experience listed</p>
               )}
             </div>
           )}
@@ -288,4 +333,4 @@ const MyProfilePage = () => {
   );
 };
 
-export default MyProfilePage;
+export default ProfilePage;

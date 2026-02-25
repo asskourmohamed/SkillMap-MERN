@@ -5,7 +5,7 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import DiscoveryPage from './pages/DiscoveryPage';
-import MyProfilePage from './pages/MyProfilePage';
+import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage'; // Ajouter cette ligne
 
 const ProtectedRoute = ({ children }) => {
@@ -38,12 +38,12 @@ function AppRoutes() {
       } />
       <Route path="/app/profile/:id" element={
         <ProtectedRoute>
-          <MyProfilePage />
+          <ProfilePage />
         </ProtectedRoute>
       } />
       <Route path="/app/my-profile" element={
         <ProtectedRoute>
-          <MyProfilePage />
+          <Navigate to={`/app/profile/${getCurrentUserId()}`} />
         </ProtectedRoute>
       } />
       <Route path="/app/settings" element={  
@@ -59,7 +59,10 @@ function AppRoutes() {
     </Routes>
   );
 }
-
+const getCurrentUserId = () => {
+  const userStr = localStorage.getItem('user');
+  return userStr ? JSON.parse(userStr)._id : '';
+};
 function App() {
   return (
     <Router>
