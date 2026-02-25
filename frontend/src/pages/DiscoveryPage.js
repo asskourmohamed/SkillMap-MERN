@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AppHeader from '../components/Layout/AppHeader';
 import { Link } from 'react-router-dom';
-import { employeeService } from '../services/api';
+import { profileService } from '../services/api';
 
 const DiscoveryPage = () => {
   const [profiles, setProfiles] = useState([]);
@@ -22,7 +22,7 @@ const DiscoveryPage = () => {
   const fetchProfiles = async () => {
     try {
       setLoading(true);
-      const response = await employeeService.getAll();
+      const response = await profileService.getAll();
       setProfiles(response.data.data || []);
     } catch (error) {
       console.error('Erreur lors du chargement:', error);

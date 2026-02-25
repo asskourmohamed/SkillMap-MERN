@@ -2,7 +2,7 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
-// Générer le token JWT
+// Générer le token
 const generateToken = (user) => {
   return jwt.sign(
     { id: user._id, email: user.email, name: user.name },
@@ -16,15 +16,6 @@ exports.register = async (req, res) => {
   try {
     const { name, email, password, department, jobTitle, company } = req.body;
 
-    // Validation basique
-    if (!name || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        error: 'Tous les champs obligatoires doivent être remplis'
-      });
-    }
-
-    // Vérifier si l'utilisateur existe déjà
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({
@@ -33,24 +24,20 @@ exports.register = async (req, res) => {
       });
     }
 
-    // Hasher le mot de passe manuellement
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Créer le nouvel utilisateur avec mot de passe hashé
+    // Le mot de passe sera hashé par le middleware pre('save')
     const user = await User.create({
       name,
       email,
-      password: hashedPassword, // Mot de passe déjà hashé
+      password, // En clair ici, sera hashé automatiquement
       department,
       jobTitle,
-      company
+      company,
+      skills: [],
+      projects: [],
+      experiences: []
     });
 
-    // Générer le token
     const token = generateToken(user);
-
-    // Retourner les infos (sans le mot de passe)
     const userResponse = user.toObject();
     delete userResponse.password;
 
@@ -60,7 +47,7 @@ exports.register = async (req, res) => {
       data: userResponse
     });
   } catch (error) {
-    console.error('Erreur register:', error);
+    console.error('❌ Erreur register:', error);
     res.status(400).json({
       success: false,
       error: error.message
@@ -73,16 +60,7 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validation
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        error: 'Email et mot de passe requis'
-      });
-    }
-
-    // Vérifier si l'utilisateur existe
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select('+password');
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -90,7 +68,6 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Vérifier le mot de passe
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(401).json({
@@ -99,14 +76,10 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Mettre à jour la dernière connexion
     user.lastLogin = new Date();
     await user.save();
 
-    // Générer le token
     const token = generateToken(user);
-
-    // Retourner les infos (sans le mot de passe)
     const userResponse = user.toObject();
     delete userResponse.password;
 
@@ -116,7 +89,7 @@ exports.login = async (req, res) => {
       data: userResponse
     });
   } catch (error) {
-    console.error('Erreur login:', error);
+    console.error('❌ Erreur login:', error);
     res.status(400).json({
       success: false,
       error: error.message
@@ -146,7 +119,7 @@ exports.getMe = async (req, res) => {
 // Mettre à jour le profil
 exports.updateProfile = async (req, res) => {
   try {
-    const allowedFields = ['name', 'jobTitle', 'company', 'location', 'bio', 'profilePicture', 'department'];
+    const allowedFields = ['name', 'jobTitle', 'company', 'location', 'bio', 'profilePicture', 'coverPicture', 'website', 'department'];
     const updates = {};
     
     Object.keys(req.body).forEach(key => {
@@ -181,7 +154,7 @@ exports.changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
 
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user.id).select('+password');
 
     const isMatch = await user.comparePassword(currentPassword);
     if (!isMatch) {
@@ -191,9 +164,7 @@ exports.changePassword = async (req, res) => {
       });
     }
 
-    // Hasher le nouveau mot de passe
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(newPassword, salt);
+    user.password = newPassword; // Sera hashé par le middleware
     await user.save();
 
     res.json({
@@ -207,9 +178,8 @@ exports.changePassword = async (req, res) => {
     });
   }
 };
-
 // Déconnexion
-exports.logout = (req, res) => {
+exports.logout = async (req, res) => {
   res.json({
     success: true,
     message: 'Déconnexion réussie'
