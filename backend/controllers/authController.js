@@ -56,19 +56,48 @@ exports.register = async (req, res) => {
 };
 
 // Connexion
+// Connexion
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    
+    console.log('🔐 Tentative de connexion pour:', email);
 
+    // Validation
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email et mot de passe requis'
+      });
+    }
+
+    // Chercher l'utilisateur AVEC le mot de passe (select +password)
     const user = await User.findOne({ email }).select('+password');
+    
     if (!user) {
+      console.log('❌ Utilisateur non trouvé:', email);
       return res.status(401).json({
         success: false,
         error: 'Email ou mot de passe incorrect'
       });
     }
 
-    const isMatch = await user.comparePassword(password);
+    console.log('✅ Utilisateur trouvé:', user.email);
+    console.log('🔑 Hash en DB:', user.password ? user.password.substring(0, 30) + '...' : '❌ PAS DE PASSWORD');
+
+    // Vérifier que le password existe
+    if (!user.password) {
+      console.error('❌ Utilisateur sans mot de passe!');
+      return res.status(500).json({
+        success: false,
+        error: 'Erreur de configuration du compte'
+      });
+    }
+
+    // Comparer les mots de passe
+    const isMatch = await bcrypt.compare(password, user.password);
+    console.log('🔐 Résultat comparaison:', isMatch);
+
     if (!isMatch) {
       return res.status(401).json({
         success: false,
@@ -76,23 +105,34 @@ exports.login = async (req, res) => {
       });
     }
 
-    user.lastLogin = new Date();
-    await user.save();
+    // Générer le token
+    const token = jwt.sign(
+      { 
+        id: user._id, 
+        email: user.email, 
+        name: user.name 
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
 
-    const token = generateToken(user);
+    // Préparer la réponse sans le mot de passe
     const userResponse = user.toObject();
     delete userResponse.password;
+
+    console.log('✅ Connexion réussie pour:', user.email);
 
     res.json({
       success: true,
       token,
       data: userResponse
     });
+
   } catch (error) {
     console.error('❌ Erreur login:', error);
-    res.status(400).json({
+    res.status(500).json({
       success: false,
-      error: error.message
+      error: 'Erreur serveur'
     });
   }
 };
