@@ -55,7 +55,7 @@ exports.register = async (req, res) => {
   }
 };
 
-// Connexion
+
 // Connexion
 exports.login = async (req, res) => {
   try {

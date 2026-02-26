@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import AppHeader from '../components/Layout/AppHeader';
-import { profileService } from '../services/api';
+import { profileService, authService } from '../services/api';
 
 const ProfilePage = () => {
-  const { id } = useParams(); // Récupère l'ID depuis l'URL
+  const { id } = useParams(); // Peut être undefined si on est sur /app/my-profile
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -13,23 +13,55 @@ const ProfilePage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Récupérer l'utilisateur connecté
+    // Récupérer l'utilisateur connecté depuis localStorage
     const userStr = localStorage.getItem('user');
     if (userStr) {
       setCurrentUser(JSON.parse(userStr));
     }
     
-    console.log('🔍 ID du profil demandé:', id);
-    fetchProfile();
-  }, [id]); // Recharger quand l'ID change
+    console.log('📍 URL actuelle:', window.location.pathname);
+    console.log('🔍 ID depuis URL:', id);
+    
+    // Si pas d'ID dans l'URL, on charge le profil de l'utilisateur connecté
+    if (!id) {
+      console.log('📡 Chargement de MON profil (my-profile)');
+      fetchMyProfile();
+    } else {
+      console.log('📡 Chargement du profil avec ID:', id);
+      fetchProfile(id);
+    }
+  }, [id]);
 
-  const fetchProfile = async () => {
+  const fetchMyProfile = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      console.log('📡 Chargement du profil:', id);
-      const response = await profileService.getById(id);
+      console.log('📡 Appel à authService.getMe()');
+      const response = await authService.getMe();
+      console.log('✅ Mon profil chargé:', response.data.data);
+      setProfile(response.data.data);
+    } catch (error) {
+      console.error('❌ Erreur chargement mon profil:', error);
+      setError('Erreur de chargement de votre profil');
+      
+      if (error.response?.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        navigate('/login');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchProfile = async (profileId) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      console.log('📡 Appel à profileService.getById() pour:', profileId);
+      const response = await profileService.getById(profileId);
       console.log('✅ Profil chargé:', response.data.data);
       setProfile(response.data.data);
     } catch (error) {
@@ -40,8 +72,12 @@ const ProfilePage = () => {
     }
   };
 
-  // Vérifier si c'est notre propre profil
+  // Vérifier si c'est notre propre profil (comparaison avec currentUser)
   const isOwnProfile = currentUser && profile && currentUser._id === profile._id;
+  
+  console.log('👤 currentUser:', currentUser?.email);
+  console.log('👤 profile:', profile?.email);
+  console.log('🔍 isOwnProfile:', isOwnProfile);
 
   if (loading) {
     return (
@@ -73,12 +109,13 @@ const ProfilePage = () => {
     );
   }
 
+  // ... le reste de votre JSX (header, tabs, etc.) reste identique
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark">
       <AppHeader user={currentUser} />
       
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Bouton retour */}
+        {/* Bouton retour - différent selon si c'est notre profil ou non */}
         <button 
           onClick={() => navigate('/app/discovery')}
           className="mb-4 flex items-center gap-2 text-slate-600 hover:text-primary transition-colors"
@@ -212,8 +249,8 @@ const ProfilePage = () => {
           </button>
         </div>
 
-        {/* Tab Content - À compléter selon vos besoins */}
-        <div className="space-y-8">
+        {/* Tab Content - le reste de votre code pour les onglets */}
+                <div className="space-y-8">
           {activeTab === 'about' && (
             <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
               <h3 className="text-lg font-bold mb-4">About</h3>
@@ -332,5 +369,6 @@ const ProfilePage = () => {
     </div>
   );
 };
+
 
 export default ProfilePage;
