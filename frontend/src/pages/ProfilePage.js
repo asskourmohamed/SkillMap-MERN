@@ -4,7 +4,7 @@ import AppHeader from '../components/Layout/AppHeader';
 import { profileService, authService } from '../services/api';
 
 const ProfilePage = () => {
-  const { id } = useParams(); // Peut être undefined si on est sur /app/my-profile
+  const { id } = useParams();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -15,34 +15,41 @@ const ProfilePage = () => {
   useEffect(() => {
     // Récupérer l'utilisateur connecté depuis localStorage
     const userStr = localStorage.getItem('user');
-    if (userStr) {
-      setCurrentUser(JSON.parse(userStr));
+    if (!userStr) {
+      console.log('❌ Aucun utilisateur dans localStorage');
+      navigate('/login');
+      return;
     }
+
+    const user = JSON.parse(userStr);
+    setCurrentUser(user);
+    console.log('👤 currentUser:', user.email);
+    console.log('📍 URL:', window.location.pathname);
+    console.log('🔍 ID:', id || 'pas d\'ID (my-profile)');
     
-    console.log('📍 URL actuelle:', window.location.pathname);
-    console.log('🔍 ID depuis URL:', id);
-    
-    // Si pas d'ID dans l'URL, on charge le profil de l'utilisateur connecté
+    // DÉCISION: quel profil charger ?
     if (!id) {
-      console.log('📡 Chargement de MON profil (my-profile)');
+      // CAS 1: /app/my-profile → charger MON profil
+      console.log('📡 CAS 1: Chargement de MON profil via authService.getMe()');
       fetchMyProfile();
     } else {
-      console.log('📡 Chargement du profil avec ID:', id);
+      // CAS 2: /app/profile/:id → charger le profil de quelqu'un d'autre
+      console.log('📡 CAS 2: Chargement du profil ID:', id);
       fetchProfile(id);
     }
-  }, [id]);
+  }, [id]); // Dépend de id pour recharger si l'URL change
 
   const fetchMyProfile = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      console.log('📡 Appel à authService.getMe()');
+      console.log('📡 Appel à authService.getMe()...');
       const response = await authService.getMe();
-      console.log('✅ Mon profil chargé:', response.data.data);
+      console.log('✅ Mon profil chargé:', response.data.data.email);
       setProfile(response.data.data);
     } catch (error) {
-      console.error('❌ Erreur chargement mon profil:', error);
+      console.error('❌ Erreur authService.getMe():', error);
       setError('Erreur de chargement de votre profil');
       
       if (error.response?.status === 401) {
@@ -62,22 +69,20 @@ const ProfilePage = () => {
       
       console.log('📡 Appel à profileService.getById() pour:', profileId);
       const response = await profileService.getById(profileId);
-      console.log('✅ Profil chargé:', response.data.data);
+      console.log('✅ Profil chargé:', response.data.data.email);
       setProfile(response.data.data);
     } catch (error) {
-      console.error('❌ Erreur chargement profil:', error);
+      console.error('❌ Erreur profileService.getById():', error);
       setError('Profil non trouvé');
     } finally {
       setLoading(false);
     }
   };
 
-  // Vérifier si c'est notre propre profil (comparaison avec currentUser)
+  // Vérifier si c'est notre propre profil
   const isOwnProfile = currentUser && profile && currentUser._id === profile._id;
   
-  console.log('👤 currentUser:', currentUser?.email);
-  console.log('👤 profile:', profile?.email);
-  console.log('🔍 isOwnProfile:', isOwnProfile);
+  console.log('📊 isOwnProfile:', isOwnProfile);
 
   if (loading) {
     return (
@@ -109,13 +114,12 @@ const ProfilePage = () => {
     );
   }
 
-  // ... le reste de votre JSX (header, tabs, etc.) reste identique
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark">
       <AppHeader user={currentUser} />
       
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Bouton retour - différent selon si c'est notre profil ou non */}
+        {/* Bouton retour */}
         <button 
           onClick={() => navigate('/app/discovery')}
           className="mb-4 flex items-center gap-2 text-slate-600 hover:text-primary transition-colors"
@@ -171,7 +175,7 @@ const ProfilePage = () => {
                 </div>
               </div>
               
-              {/* Boutons d'action - différents si c'est notre profil */}
+              {/* Boutons d'action */}
               <div className="flex gap-3 pb-2">
                 {isOwnProfile ? (
                   <Link 
@@ -249,8 +253,8 @@ const ProfilePage = () => {
           </button>
         </div>
 
-        {/* Tab Content - le reste de votre code pour les onglets */}
-                <div className="space-y-8">
+        {/* Tab Content */}
+        <div className="space-y-8">
           {activeTab === 'about' && (
             <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
               <h3 className="text-lg font-bold mb-4">About</h3>
@@ -369,6 +373,5 @@ const ProfilePage = () => {
     </div>
   );
 };
-
 
 export default ProfilePage;
