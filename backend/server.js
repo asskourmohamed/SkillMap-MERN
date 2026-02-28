@@ -12,12 +12,13 @@ app.use(cors({
 app.use(express.json());
 
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('✅ MongoDB connecté'))
-  .catch(err => console.log('❌ Erreur MongoDB:', err));
+  .then(() => console.log(' MongoDB connected'))
+  .catch(err => console.log('MongoDB not connected', err));
 
-// Routes
+
+
 app.use('/api/auth', require('./routes/authRoutes'));
-app.use('/api/profiles', require('./routes/profileRoutes')); // Nouveau nom
+app.use('/api/profiles', require('./routes/profileRoutes')); 
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Serveur démarré sur port ${PORT}`));
+app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
