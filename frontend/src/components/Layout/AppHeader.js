@@ -53,15 +53,6 @@ const AppHeader = ({ user }) => {
           />
         </Link>
 
-        <div className="flex-1 max-w-2xl relative">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
-          <input 
-            className="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-lg focus:ring-2 focus:ring-primary text-sm" 
-            placeholder="Search professionals, skills, or projects..." 
-            type="text"
-          />
-        </div>
-
         <div className="flex items-center gap-3">
           <button className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full">
             <span className="material-symbols-outlined">notifications</span>

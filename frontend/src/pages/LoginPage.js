@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-
+import handshake from "../assets/Handshakes.jpg";
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -65,21 +65,11 @@ const LoginPage = () => {
   return (
     <div className="flex min-h-screen">
       {/* Left Side: Visual Anchor */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-primary">
-        <div className="absolute inset-0 z-10 bg-primary/40 mix-blend-multiply"></div>
-        <img 
-          alt="Professionals Collaborating" 
-          className="absolute inset-0 object-cover w-full h-full" 
-          src="https://lh3.googleusercontent.com/aida-public/AB6AXuBS_sshOmTIbv8ksWJuDiSGumjthANGMr7XEJqQmMu92i0Ll781mrDqmjrCzn2YjLJs7c87FiHxTYPQtCiFF3Z1uhG79lQg5Bebx8CdWyeSXWkbnox30VDq3ULtEQXwfE9HfPf2z1VgiCwBAWdRaR9paGswmG3GXb9OUOFK1IKGAapDms45d0WwDWldq5QdyE6Ip07EoORlbsQwzLxPh3xHDbOQa6THq4pe79DHX7533-98vBaUOUZ0U3JyujwrH9f18mHeNvyAGUNL"
-        />
+          <div
+            className="hidden lg:flex lg:w-1/2 relative bg-cover bg-center"
+            style={{ backgroundImage: `url(${handshake})` }}
+          >
         <div className="relative z-20 flex flex-col justify-between p-16 w-full text-white">
-          <div className="flex items-center gap-3">
-            <div className="size-10 bg-white rounded-lg flex items-center justify-center text-primary shadow-lg">
-              <span className="material-symbols-outlined text-3xl">hub</span>
-            </div>
-            <h1 className="text-2xl font-bold tracking-tight">ProNetwork</h1>
-          </div>
-          
           <div className="max-w-md">
             <h2 className="text-5xl font-extrabold leading-tight mb-6">Connect with the world's top talent.</h2>
             <p className="text-xl text-white/90 leading-relaxed">
