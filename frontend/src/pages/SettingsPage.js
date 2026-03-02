@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppHeader from '../components/Layout/AppHeader';
 import { authService, skillService, projectService, experienceService } from '../services/api';
-
+import { uploadService } from '../services/uploadService';
 const SettingsPage = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -11,7 +11,8 @@ const SettingsPage = () => {
   const [success, setSuccess] = useState('');
   const [formData, setFormData] = useState({});
   const [activeTab, setActiveTab] = useState('profile');
-  
+  const [uploadingProfile, setUploadingProfile] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
   // États pour les nouveaux éléments
   const [newSkill, setNewSkill] = useState({
     name: '',
@@ -82,7 +83,86 @@ const SettingsPage = () => {
       [e.target.name]: e.target.value
     });
   };
+  const handleProfilePictureUpload = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
 
+  // Validation du type de fichier
+  if (!file.type.startsWith('image/')) {
+    setError('Veuillez sélectionner une image');
+    return;
+  }
+
+  // Validation de la taille (max 5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    setError('L\'image ne doit pas dépasser 5MB');
+    return;
+  }
+
+  setUploadingProfile(true);
+  setError('');
+  setSuccess('');
+
+  try {
+    const response = await uploadService.uploadProfilePicture(file);
+    
+    // Mettre à jour le profil avec la nouvelle URL
+    setFormData({
+      ...formData,
+      profilePicture: response.data.data.profilePicture
+    });
+    
+    // Mettre à jour l'utilisateur dans localStorage
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      user.profilePicture = response.data.data.profilePicture;
+      localStorage.setItem('user', JSON.stringify(user));
+    }
+    
+    setSuccess('Photo de profil mise à jour avec succès !');
+  } catch (error) {
+    console.error('❌ Erreur upload:', error);
+    setError(error.response?.data?.error || 'Erreur lors de l\'upload');
+  } finally {
+    setUploadingProfile(false);
+  }
+};
+
+const handleCoverPictureUpload = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  if (!file.type.startsWith('image/')) {
+    setError('Veuillez sélectionner une image');
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    setError('L\'image ne doit pas dépasser 5MB');
+    return;
+  }
+
+  setUploadingCover(true);
+  setError('');
+  setSuccess('');
+
+  try {
+    const response = await uploadService.uploadCoverPicture(file);
+    
+    setFormData({
+      ...formData,
+      coverPicture: response.data.data.coverPicture
+    });
+    
+    setSuccess('Photo de couverture mise à jour avec succès !');
+  } catch (error) {
+    console.error('❌ Erreur upload:', error);
+    setError(error.response?.data?.error || 'Erreur lors de l\'upload');
+  } finally {
+    setUploadingCover(false);
+  }
+};
   // ========== GESTION DES COMPÉTENCES ==========
   const handleAddSkill = async () => {
     if (!newSkill.name) {
@@ -407,26 +487,82 @@ const SettingsPage = () => {
             
             <form onSubmit={handleSaveProfile} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Photo de profil */}
-                <div className="md:col-span-2 flex items-center gap-6">
-                  <div className="w-20 h-20 rounded-full bg-primary/10 overflow-hidden border border-primary/30">
-                    <img 
-                      src={formData.profilePicture || "https://lh3.googleusercontent.com/aida-public/AB6AXuD050YU9gFVp7RLrMz66Ea84hjGCtiuOA2XBNzDe6Wj_ew6M8Aq8o1D2Dw2GT7IPq1CTc3JSGihS55VOzIXxZreUy4ABv2uD4YV1KySw6ayJ36um8P7G24bRZ8LHFuoeRD67Q1vgqh-Zt1m2wcEjc29nrBILEMXSKDCGOGrwqEwfMhyyrPcrwuMuQDdhrgFsGuALJ1olnyYODNGjCnhhX1VoMub0LEV6dMOri2siuaLrbVsBZJPL6hgVSUv5YCtBwSzlYXfw-HfbRdY"}
-                      alt="Profile"
-                      className="w-full h-full object-cover"
-                    />
+                {/* Photo de profil avec upload */}
+                <div className="md:col-span-2">
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 block">
+                    Profile Picture
+                  </label>
+                  <div className="flex items-center gap-6">
+                    <div className="relative group">
+                      <div className="w-24 h-24 rounded-full bg-primary/10 overflow-hidden border-2 border-primary/30">
+                        <img 
+                          src={formData.profilePicture || "https://lh3.googleusercontent.com/aida-public/AB6AXuD050YU9gFVp7RLrMz66Ea84hjGCtiuOA2XBNzDe6Wj_ew6M8Aq8o1D2Dw2GT7IPq1CTc3JSGihS55VOzIXxZreUy4ABv2uD4YV1KySw6ayJ36um8P7G24bRZ8LHFuoeRD67Q1vgqh-Zt1m2wcEjc29nrBILEMXSKDCGOGrwqEwfMhyyrPcrwuMuQDdhrgFsGuALJ1olnyYODNGjCnhhX1VoMub0LEV6dMOri2siuaLrbVsBZJPL6hgVSUv5YCtBwSzlYXfw-HfbRdY"}
+                          alt="Profile"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      
+                      {/* Bouton d'upload qui apparaît au survol */}
+                      <label className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleProfilePictureUpload}
+                          className="hidden"
+                          disabled={uploadingProfile}
+                        />
+                        <span className="material-symbols-outlined text-white">
+                          {uploadingProfile ? 'hourglass_empty' : 'photo_camera'}
+                        </span>
+                      </label>
+                    </div>
+                    
+                    <div className="flex-1">
+                      <p className="text-sm text-slate-600 dark:text-slate-400">
+                        {uploadingProfile ? 'Upload en cours...' : 'Cliquez sur l\'image pour modifier'}
+                      </p>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Formats acceptés: JPG, PNG, GIF. Max 5MB.
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">Profile Picture URL</p>
-                    <input
-                      type="url"
-                      name="profilePicture"
-                      value={formData.profilePicture || ''}
-                      onChange={handleInputChange}
-                      placeholder="https://example.com/image.jpg"
-                      className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm"
-                    />
+                </div>
+
+                {/* Photo de couverture avec upload */}
+                <div className="md:col-span-2">
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 block">
+                    Cover Picture
+                  </label>
+                  <div className="relative group h-32 bg-slate-100 dark:bg-slate-800 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
+                    {formData.coverPicture ? (
+                      <img 
+                        src={formData.coverPicture} 
+                        alt="Cover"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-slate-400">
+                        <span className="material-symbols-outlined text-4xl">image</span>
+                      </div>
+                    )}
+                    
+                    {/* Bouton d'upload qui apparaît au survol */}
+                    <label className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleCoverPictureUpload}
+                        className="hidden"
+                        disabled={uploadingCover}
+                      />
+                      <span className="material-symbols-outlined text-white">
+                        {uploadingCover ? 'hourglass_empty' : 'photo_camera'}
+                      </span>
+                    </label>
                   </div>
+                  <p className="text-xs text-slate-500 mt-1">
+                    {uploadingCover ? 'Upload en cours...' : 'Cliquez pour changer la photo de couverture (1500x500px recommandé)'}
+                  </p>
                 </div>
 
                 <div className="space-y-2">

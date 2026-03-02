@@ -137,7 +137,7 @@ const ProfilePage = () => {
           </div>
           
           <div className="px-8 pb-8">
-            <div className="relative flex flex-col md:flex-row md:items-end -mt-16 gap-6">
+            <div className="relative flex flex-col md:flex-row md:items-end -mt-8 gap-6">
               <div className="relative">
                 <div className="h-32 w-32 rounded-full border-4 border-white dark:border-slate-900 bg-slate-200 overflow-hidden shadow-lg">
                   <img 
