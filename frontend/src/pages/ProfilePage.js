@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import AppHeader from '../components/Layout/AppHeader';
 import ProfileHeader from '../components/Profile/ProfileHeader';
-import ProfileTabs from '../components/Profile/ProfileTabs';
 import AboutTab from '../components/Profile/AboutTab';
 import SkillsTab from '../components/Profile/SkillsTab';
 import ProjectsTab from '../components/Profile/ProjectsTab';
 import ExperienceTab from '../components/Profile/ExperienceTab';
+import CVTab from '../components/Profile/CVTab'; // Import du nouvel onglet
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import ErrorMessage from '../components/Common/ErrorMessage';
+import Card from '../components/UI/Card';
 import { profileService, authService } from '../services/api';
 import { uploadService } from '../services/uploadService';
 
@@ -68,7 +69,6 @@ const ProfilePage = () => {
       const response = await uploadService.uploadProfilePicture(file);
       setProfile(prev => ({ ...prev, profilePicture: response.data.data.profilePicture }));
       
-      // Mettre à jour localStorage si c'est notre profil
       if (currentUser?._id === profile?._id) {
         const user = JSON.parse(localStorage.getItem('user'));
         user.profilePicture = response.data.data.profilePicture;
@@ -108,13 +108,29 @@ const ProfilePage = () => {
 
   const isOwnProfile = currentUser?._id === profile._id;
 
+  // Définition des tabs avec le nouvel onglet CV
+  const tabs = [
+    { id: 'about', label: 'About', icon: 'person' },
+    { id: 'skills', label: 'Skills', icon: 'verified' },
+    { id: 'projects', label: 'Projects', icon: 'work' },
+    { id: 'experience', label: 'Experience', icon: 'business_center' },
+    { id: 'cv', label: 'CV', icon: 'description' } // 👈 Nouvel onglet CV
+  ];
+
   const renderTab = () => {
     switch (activeTab) {
-      case 'about': return <AboutTab profile={profile} />;
-      case 'skills': return <SkillsTab profile={profile} isOwnProfile={isOwnProfile} />;
-      case 'projects': return <ProjectsTab profile={profile} isOwnProfile={isOwnProfile} />;
-      case 'experience': return <ExperienceTab profile={profile} isOwnProfile={isOwnProfile} />;
-      default: return <AboutTab profile={profile} />;
+      case 'about':
+        return <AboutTab profile={profile} />;
+      case 'skills':
+        return <SkillsTab profile={profile} isOwnProfile={isOwnProfile} />;
+      case 'projects':
+        return <ProjectsTab profile={profile} isOwnProfile={isOwnProfile} />;
+      case 'experience':
+        return <ExperienceTab profile={profile} isOwnProfile={isOwnProfile} />;
+      case 'cv':
+        return <CVTab profile={profile} isOwnProfile={isOwnProfile} />; // 👈 Nouvel onglet
+      default:
+        return <AboutTab profile={profile} />;
     }
   };
 
@@ -139,8 +155,25 @@ const ProfilePage = () => {
           uploading={uploading}
         />
 
-        <ProfileTabs activeTab={activeTab} onTabChange={setActiveTab} />
+        {/* Navigation Tabs */}
+        <div className="flex border-b border-slate-200 dark:border-slate-800 overflow-x-auto no-scrollbar mb-8">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-6 py-3 border-b-2 font-bold text-sm flex items-center gap-2 whitespace-nowrap transition-colors ${
+                activeTab === tab.id
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
+              }`}
+            >
+              <span className="material-symbols-outlined text-lg">{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
+        {/* Tab Content */}
         <div className="mt-8">
           {renderTab()}
         </div>

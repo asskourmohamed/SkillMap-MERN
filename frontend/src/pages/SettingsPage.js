@@ -12,6 +12,7 @@ import { authService, skillService, projectService, experienceService } from '..
 import { uploadService } from '../services/uploadService';
 import { DEPARTMENTS, SKILL_LEVELS } from '../utils/constants';
 import { useToast } from '../context/ToastContext';
+import { cvService } from '../services/cvService';
 const SettingsPage = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -23,6 +24,8 @@ const SettingsPage = () => {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteType, setDeleteType] = useState(null);
   const toast = useToast();
+  const [cvFile, setCvFile] = useState(null);
+  const [uploadingCV, setUploadingCV] = useState(false);
   // États pour les nouveaux éléments
   const [newSkill, setNewSkill] = useState({
     name: '',
@@ -309,7 +312,56 @@ const SettingsPage = () => {
       setDeleteType(null);
     }
   };
+  // ========== GESTION DU CV ==========
+  const handleCVUpload = async (file) => {
+  if (!file) return;
 
+  // Validation
+  const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+  if (!allowedTypes.includes(file.type)) {
+    toast.error('Format non supporté. Utilisez PDF, DOC ou DOCX');
+    return;
+  }
+
+  if (file.size > 10 * 1024 * 1024) {
+    toast.error('Le fichier ne doit pas dépasser 10MB');
+    return;
+  }
+
+  setUploadingCV(true);
+
+  try {
+    const response = await cvService.uploadCV(file);
+    setProfile(prev => ({ ...prev, cv: response.data.data }));
+    toast.success('CV uploadé avec succès !');
+  } catch (error) {
+    console.error('Erreur upload CV:', error);
+    toast.error(error.response?.data?.error || 'Erreur lors de l\'upload');
+  } finally {
+    setUploadingCV(false);
+  }
+};
+
+  const handleDeleteCV = async () => {
+  if (!window.confirm('Êtes-vous sûr de vouloir supprimer votre CV ?')) return;
+
+  try {
+    await cvService.deleteCV();
+    setProfile(prev => {
+      const newProfile = { ...prev };
+      delete newProfile.cv;
+      return newProfile;
+    });
+    toast.success('CV supprimé avec succès');
+  } catch (error) {
+    console.error('Erreur suppression CV:', error);
+    toast.error(error.response?.data?.error || 'Erreur lors de la suppression');
+  }
+};
+
+  const handleDownloadPDF = () => {
+  cvService.downloadPDF(profile._id);
+};
   // ========== GESTION DU PROFIL ==========
   const handleSaveProfile = async (e) => {
     e.preventDefault();
@@ -384,6 +436,7 @@ const SettingsPage = () => {
     { id: 'skills', label: 'Skills', icon: 'verified' },
     { id: 'projects', label: 'Projects', icon: 'work' },
     { id: 'experience', label: 'Experience', icon: 'business_center' },
+    { id: 'cv', label: 'CV & Documents', icon: 'description' },
     { id: 'password', label: 'Password', icon: 'lock' }
   ];
 
@@ -955,7 +1008,103 @@ const SettingsPage = () => {
             </Card>
           </div>
         )}
+        {/* CV Tab */}
+        {activeTab === 'cv' && (
+          <Card>
+            <h2 className="text-xl font-bold mb-6">CV & Documents</h2>
+            
+            <div className="space-y-6">
+              {/* CV actuel */}
+              {profile.cv ? (
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                      <span className="material-symbols-outlined text-primary">description</span>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-medium text-slate-900 dark:text-white">{profile.cv.originalName}</h3>
+                      <p className="text-xs text-slate-500">
+                        Uploadé le {new Date(profile.cv.uploadDate).toLocaleDateString()} 
+                        ({Math.round(profile.cv.fileSize / 1024)} KB)
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <a
+                        href={profile.cv.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                      >
+                        <span className="material-symbols-outlined">visibility</span>
+                      </a>
+                      <button
+                        onClick={handleDeleteCV}
+                        className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                      >
+                        <span className="material-symbols-outlined">delete</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-8 text-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg">
+                  <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">upload_file</span>
+                  <p className="text-slate-500">Aucun CV uploadé</p>
+                </div>
+              )}
 
+              {/* Upload nouveau CV */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                  Uploader un nouveau CV
+                </label>
+                <div className="flex items-center gap-4">
+                  <label className="flex-1 cursor-pointer">
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      onChange={(e) => handleCVUpload(e.target.files[0])}
+                      className="hidden"
+                      disabled={uploadingCV}
+                    />
+                    <div className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg p-4 text-center hover:border-primary transition-colors">
+                      <span className="material-symbols-outlined text-2xl text-slate-400 mb-1">cloud_upload</span>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">
+                        {uploadingCV ? 'Upload en cours...' : 'Cliquez pour sélectionner un fichier'}
+                      </p>
+                      <p className="text-xs text-slate-500 mt-1">PDF, DOC, DOCX (max 10MB)</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Séparateur */}
+              <div className="relative my-8">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-slate-200 dark:border-slate-700"></div>
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white dark:bg-slate-900 px-4 text-slate-500">OU</span>
+                </div>
+              </div>
+
+              {/* Génération PDF */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Générer un CV depuis votre profil</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+                  Créez un CV PDF automatiquement à partir des informations de votre profil.
+                </p>
+                <Button
+                  onClick={handleDownloadPDF}
+                  variant="primary"
+                  icon="download"
+                >
+                  Télécharger mon CV (PDF)
+                </Button>
+              </div>
+            </div>
+          </Card>
+        )}
         {/* Password Tab */}
         {activeTab === 'password' && (
           <Card>

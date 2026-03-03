@@ -39,6 +39,27 @@ const coverStorage = new CloudinaryStorage({
   }
 });
 
+// Configuration pour les CV
+const cvStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'cvs',
+    allowed_formats: ['pdf', 'doc', 'docx'],
+    resource_type: 'raw',
+    public_id: (req, file) => {
+      const userId = req.user.id;
+      const timestamp = Date.now();
+      const originalName = file.originalname.split('.')[0].replace(/[^a-zA-Z0-9]/g, '_');
+      return `cv-${userId}-${timestamp}-${originalName}`;
+    }
+  }
+});
+
+const uploadCV = multer({ 
+  storage: cvStorage,
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB max
+}).single('cv');
+
 // Middleware d'upload
 const uploadProfilePicture = multer({ storage: profileStorage }).single('profilePicture');
 const uploadCoverPicture = multer({ storage: coverStorage }).single('coverPicture');
@@ -46,5 +67,6 @@ const uploadCoverPicture = multer({ storage: coverStorage }).single('coverPictur
 module.exports = {
   cloudinary,
   uploadProfilePicture,
-  uploadCoverPicture
+  uploadCoverPicture,
+  uploadCV
 };

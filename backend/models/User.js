@@ -74,7 +74,14 @@ const UserSchema = new mongoose.Schema({
     isCurrent: { type: Boolean, default: false },
     description: String
   }],
-  
+  cv: {
+    url: String,
+    filename: String,
+    originalName: String,
+    uploadDate: { type: Date, default: Date.now },
+    fileSize: Number,
+    fileType: String
+},
   // Connexions
   connections: [{
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
