@@ -1,18 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppHeader from '../components/Layout/AppHeader';
+import LoadingSpinner from '../components/Common/LoadingSpinner';
+import ErrorMessage from '../components/Common/ErrorMessage';
+import SuccessMessage from '../components/Common/SuccessMessage';
+import ImageUploader from '../components/Common/ImageUploader';
+import ConfirmationDialog from '../components/Common/ConfirmationDialog';
+import Button from '../components/UI/Button';
+import Card from '../components/UI/Card';
 import { authService, skillService, projectService, experienceService } from '../services/api';
 import { uploadService } from '../services/uploadService';
+import { DEPARTMENTS, SKILL_LEVELS } from '../utils/constants';
+import { useToast } from '../context/ToastContext';
 const SettingsPage = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [formData, setFormData] = useState({});
   const [activeTab, setActiveTab] = useState('profile');
-  const [uploadingProfile, setUploadingProfile] = useState(false);
-  const [uploadingCover, setUploadingCover] = useState(false);
+  const [uploading, setUploading] = useState({ profile: false, cover: false });
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteType, setDeleteType] = useState(null);
+  const toast = useToast();
   // États pour les nouveaux éléments
   const [newSkill, setNewSkill] = useState({
     name: '',
@@ -64,7 +74,7 @@ const SettingsPage = () => {
       setFormData(response.data.data);
     } catch (error) {
       console.error('Erreur chargement profil:', error);
-      setError('Erreur lors du chargement du profil');
+      toast.error(error.response?.data?.error || 'Erreur lors du chargement du profil');
     } finally {
       setLoading(false);
     }
@@ -83,95 +93,53 @@ const SettingsPage = () => {
       [e.target.name]: e.target.value
     });
   };
-  const handleProfilePictureUpload = async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
 
-  // Validation du type de fichier
-  if (!file.type.startsWith('image/')) {
-    setError('Veuillez sélectionner une image');
-    return;
-  }
-
-  // Validation de la taille (max 5MB)
-  if (file.size > 5 * 1024 * 1024) {
-    setError('L\'image ne doit pas dépasser 5MB');
-    return;
-  }
-
-  setUploadingProfile(true);
-  setError('');
-  setSuccess('');
-
-  try {
-    const response = await uploadService.uploadProfilePicture(file);
+  // ========== GESTION DES UPLOADS ==========
+  const handleProfilePictureUpload = async (file) => {
+    setUploading(prev => ({ ...prev, profile: true }));
     
-    // Mettre à jour le profil avec la nouvelle URL
-    setFormData({
-      ...formData,
-      profilePicture: response.data.data.profilePicture
-    });
-    
-    // Mettre à jour l'utilisateur dans localStorage
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      const user = JSON.parse(userStr);
-      user.profilePicture = response.data.data.profilePicture;
-      localStorage.setItem('user', JSON.stringify(user));
+    try {
+      const response = await uploadService.uploadProfilePicture(file);
+      setFormData(prev => ({ ...prev, profilePicture: response.data.data.profilePicture }));
+      toast.success('Photo de profil mise à jour avec succès !');
+      // Mettre à jour localStorage
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        user.profilePicture = response.data.data.profilePicture;
+        localStorage.setItem('user', JSON.stringify(user));
+      }
+    } catch (error) {
+      console.error('Erreur upload:', error);
+      toast.error(error.response?.data?.error || 'Erreur lors de l\'upload');
+    } finally {
+      setUploading(prev => ({ ...prev, profile: false }));
     }
+  };
+
+  const handleCoverPictureUpload = async (file) => {
+    setUploading(prev => ({ ...prev, cover: true }));
     
-    setSuccess('Photo de profil mise à jour avec succès !');
-  } catch (error) {
-    console.error('❌ Erreur upload:', error);
-    setError(error.response?.data?.error || 'Erreur lors de l\'upload');
-  } finally {
-    setUploadingProfile(false);
-  }
-};
+    try {
+      const response = await uploadService.uploadCoverPicture(file);
+      setFormData(prev => ({ ...prev, coverPicture: response.data.data.coverPicture }));
+    } catch (error) {
+      console.error('Erreur upload:', error);
+    } finally {
+      setUploading(prev => ({ ...prev, cover: false }));
+    }
+  };
 
-const handleCoverPictureUpload = async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  if (!file.type.startsWith('image/')) {
-    setError('Veuillez sélectionner une image');
-    return;
-  }
-
-  if (file.size > 5 * 1024 * 1024) {
-    setError('L\'image ne doit pas dépasser 5MB');
-    return;
-  }
-
-  setUploadingCover(true);
-  setError('');
-  setSuccess('');
-
-  try {
-    const response = await uploadService.uploadCoverPicture(file);
-    
-    setFormData({
-      ...formData,
-      coverPicture: response.data.data.coverPicture
-    });
-    
-    setSuccess('Photo de couverture mise à jour avec succès !');
-  } catch (error) {
-    console.error('❌ Erreur upload:', error);
-    setError(error.response?.data?.error || 'Erreur lors de l\'upload');
-  } finally {
-    setUploadingCover(false);
-  }
-};
   // ========== GESTION DES COMPÉTENCES ==========
   const handleAddSkill = async () => {
     if (!newSkill.name) {
-      setError('Le nom de la compétence est requis');
+      toast.error('Le nom de la compétence est requis');
       return;
     }
 
+    setSaving(true);
+    
     try {
-      setSaving(true);
       const skillData = {
         ...newSkill,
         yearsOfExperience: parseInt(newSkill.yearsOfExperience) || 0
@@ -185,40 +153,49 @@ const handleCoverPictureUpload = async (e) => {
         description: '',
         yearsOfExperience: ''
       });
-      setSuccess('Compétence ajoutée avec succès !');
+      toast.success('Compétence ajoutée avec succès !');
     } catch (error) {
       console.error('Erreur ajout compétence:', error);
-      setError(error.response?.data?.error || 'Erreur lors de l\'ajout de la compétence');
+      toast.error(error.response?.data?.error || 'Erreur lors de l\'ajout de la compétence');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDeleteSkill = async (skillId) => {
-    if (!window.confirm('Supprimer cette compétence ?')) return;
+  const confirmDeleteSkill = (skillId) => {
+    setDeleteTarget(skillId);
+    setDeleteType('skill');
+    setShowDeleteDialog(true);
+  };
 
+  const handleDeleteSkill = async () => {
+    setSaving(true);
+    
     try {
-      setSaving(true);
-      await skillService.deleteSkill(profile._id, skillId);
-      fetchProfile();
-      setSuccess('Compétence supprimée avec succès !');
+      await skillService.deleteSkill(profile._id, deleteTarget);
+      await fetchProfile();
+      toast.success('Compétence supprimée avec succès !');
+      setShowDeleteDialog(false);
     } catch (error) {
       console.error('Erreur suppression compétence:', error);
-      setError(error.response?.data?.error || 'Erreur lors de la suppression');
+      toast.success('Compétence supprimée avec succès !');
     } finally {
       setSaving(false);
+      setDeleteTarget(null);
+      setDeleteType(null);
     }
   };
 
   // ========== GESTION DES PROJETS ==========
   const handleAddProject = async () => {
     if (!newProject.title) {
-      setError('Le titre du projet est requis');
+      toast.error('Le titre du projet est requis');
       return;
     }
 
+    setSaving(true);
+    
     try {
-      setSaving(true);
       const projectData = {
         ...newProject,
         technologies: newProject.technologies ? newProject.technologies.split(',').map(t => t.trim()) : [],
@@ -240,40 +217,49 @@ const handleCoverPictureUpload = async (e) => {
         isCurrent: false,
         role: ''
       });
-      setSuccess('Projet ajouté avec succès !');
+      toast.success('Projet ajouté avec succès !');
     } catch (error) {
       console.error('Erreur ajout projet:', error);
-      setError(error.response?.data?.error || 'Erreur lors de l\'ajout du projet');
+      toast.error(error.response?.data?.error || 'Erreur lors de l\'ajout du projet');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDeleteProject = async (projectId) => {
-    if (!window.confirm('Supprimer ce projet ?')) return;
+  const confirmDeleteProject = (projectId) => {
+    setDeleteTarget(projectId);
+    setDeleteType('project');
+    setShowDeleteDialog(true);
+  };
 
+  const handleDeleteProject = async () => {
+    setSaving(true);
+    
     try {
-      setSaving(true);
-      await projectService.deleteProject(profile._id, projectId);
-      fetchProfile();
-      setSuccess('Projet supprimé avec succès !');
+      await projectService.deleteProject(profile._id, deleteTarget);
+      await fetchProfile();
+      toast.success('Projet supprimé avec succès !');
+      setShowDeleteDialog(false);
     } catch (error) {
       console.error('Erreur suppression projet:', error);
-      setError(error.response?.data?.error || 'Erreur lors de la suppression');
+      toast.error(error.response?.data?.error || 'Erreur lors de la suppression');
     } finally {
       setSaving(false);
+      setDeleteTarget(null);
+      setDeleteType(null);
     }
   };
 
   // ========== GESTION DES EXPÉRIENCES ==========
   const handleAddExperience = async () => {
     if (!newExperience.title || !newExperience.company) {
-      setError('Le titre et l\'entreprise sont requis');
+      toast.error('Le titre et l\'entreprise sont requis pour l\'expérience');
       return;
     }
 
+    setSaving(true);
+    
     try {
-      setSaving(true);
       const expData = {
         ...newExperience,
         startDate: newExperience.startDate ? new Date(newExperience.startDate) : null,
@@ -291,41 +277,48 @@ const handleCoverPictureUpload = async (e) => {
         isCurrent: false,
         description: ''
       });
-      setSuccess('Expérience ajoutée avec succès !');
+      toast.success('Expérience ajoutée avec succès !');
     } catch (error) {
       console.error('Erreur ajout expérience:', error);
-      setError(error.response?.data?.error || 'Erreur lors de l\'ajout de l\'expérience');
+      toast.error(error.response?.data?.error || 'Erreur lors de l\'ajout de l\'expérience');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDeleteExperience = async (expId) => {
-    if (!window.confirm('Supprimer cette expérience ?')) return;
+  const confirmDeleteExperience = (expId) => {
+    setDeleteTarget(expId);
+    setDeleteType('experience');
+    setShowDeleteDialog(true);
+  };
 
+  const handleDeleteExperience = async () => {
+    setSaving(true);
+    
     try {
-      setSaving(true);
-      await experienceService.deleteExperience(profile._id, expId);
-      fetchProfile();
-      setSuccess('Expérience supprimée avec succès !');
+      await experienceService.deleteExperience(profile._id, deleteTarget);
+      await fetchProfile();
+      toast.success('Expérience supprimée avec succès !');
+      setShowDeleteDialog(false);
     } catch (error) {
       console.error('Erreur suppression expérience:', error);
-      setError(error.response?.data?.error || 'Erreur lors de la suppression');
+      toast.error(error.response?.data?.error || 'Erreur lors de la suppression');
     } finally {
       setSaving(false);
+      setDeleteTarget(null);
+      setDeleteType(null);
     }
   };
 
+  // ========== GESTION DU PROFIL ==========
   const handleSaveProfile = async (e) => {
     e.preventDefault();
     setSaving(true);
-    setError('');
-    setSuccess('');
 
     try {
       const response = await authService.updateProfile(formData);
       setProfile(response.data.data);
-      setSuccess('Profil mis à jour avec succès !');
+      toast.success('Profil mis à jour avec succès !');
       
       const userStr = localStorage.getItem('user');
       if (userStr) {
@@ -337,7 +330,7 @@ const handleCoverPictureUpload = async (e) => {
       }
     } catch (error) {
       console.error('Erreur mise à jour:', error);
-      setError(error.response?.data?.error || 'Erreur lors de la mise à jour');
+      toast.error(error.response?.data?.error || 'Erreur lors de la mise à jour');
     } finally {
       setSaving(false);
     }
@@ -347,26 +340,23 @@ const handleCoverPictureUpload = async (e) => {
     e.preventDefault();
     
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setError('Les nouveaux mots de passe ne correspondent pas');
+      toast.error('Les nouveaux mots de passe ne correspondent pas');
       return;
     }
 
     if (passwordData.newPassword.length < 6) {
-      setError('Le mot de passe doit contenir au moins 6 caractères');
+      toast.error('Le mot de passe doit contenir au moins 6 caractères');
       return;
     }
 
     setSaving(true);
-    setError('');
-    setSuccess('');
-
     try {
       await authService.changePassword({
         currentPassword: passwordData.currentPassword,
         newPassword: passwordData.newPassword
       });
       
-      setSuccess('Mot de passe modifié avec succès !');
+      toast.success('Mot de passe changé avec succès !');
       setPasswordData({
         currentPassword: '',
         newPassword: '',
@@ -374,7 +364,7 @@ const handleCoverPictureUpload = async (e) => {
       });
     } catch (error) {
       console.error('Erreur changement mot de passe:', error);
-      setError(error.response?.data?.error || 'Erreur lors du changement de mot de passe');
+      toast.error(error.response?.data?.error || 'Erreur lors du changement de mot de passe');
     } finally {
       setSaving(false);
     }
@@ -384,15 +374,18 @@ const handleCoverPictureUpload = async (e) => {
     return (
       <div className="min-h-screen bg-background-light dark:bg-background-dark">
         <AppHeader user={profile} />
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        </div>
+        <LoadingSpinner fullPage text="Chargement de vos paramètres..." />
       </div>
     );
   }
 
-  const departments = ['Développement', 'Design', 'Marketing', 'Commercial', 'RH', 'Data', 'DevOps', 'Product'];
-  const skillLevels = ['Débutant', 'Intermédiaire', 'Avancé', 'Expert'];
+  const tabs = [
+    { id: 'profile', label: 'Profile Info', icon: 'person' },
+    { id: 'skills', label: 'Skills', icon: 'verified' },
+    { id: 'projects', label: 'Projects', icon: 'work' },
+    { id: 'experience', label: 'Experience', icon: 'business_center' },
+    { id: 'password', label: 'Password', icon: 'lock' }
+  ];
 
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark">
@@ -406,163 +399,56 @@ const handleCoverPictureUpload = async (e) => {
 
         {/* Tabs */}
         <div className="flex border-b border-slate-200 dark:border-slate-800 mb-8 overflow-x-auto">
-          <button
-            onClick={() => setActiveTab('profile')}
-            className={`px-6 py-3 border-b-2 font-bold text-sm flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'profile'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
-            }`}
-          >
-            <span className="material-symbols-outlined text-lg">person</span>
-            Profile Info
-          </button>
-          
-          <button
-            onClick={() => setActiveTab('skills')}
-            className={`px-6 py-3 border-b-2 font-bold text-sm flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'skills'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
-            }`}
-          >
-            <span className="material-symbols-outlined text-lg">verified</span>
-            Skills
-          </button>
-          
-          <button
-            onClick={() => setActiveTab('projects')}
-            className={`px-6 py-3 border-b-2 font-bold text-sm flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'projects'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
-            }`}
-          >
-            <span className="material-symbols-outlined text-lg">work</span>
-            Projects
-          </button>
-          
-          <button
-            onClick={() => setActiveTab('experience')}
-            className={`px-6 py-3 border-b-2 font-bold text-sm flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'experience'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
-            }`}
-          >
-            <span className="material-symbols-outlined text-lg">business_center</span>
-            Experience
-          </button>
-          
-          <button
-            onClick={() => setActiveTab('password')}
-            className={`px-6 py-3 border-b-2 font-bold text-sm flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'password'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
-            }`}
-          >
-            <span className="material-symbols-outlined text-lg">lock</span>
-            Password
-          </button>
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-6 py-3 border-b-2 font-bold text-sm flex items-center gap-2 whitespace-nowrap transition-colors ${
+                activeTab === tab.id
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
+              }`}
+            >
+              <span className="material-symbols-outlined text-lg">{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
         </div>
-
-        {/* Messages */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-lg">
-            {error}
-          </div>
-        )}
-        
-        {success && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-600 rounded-lg">
-            {success}
-          </div>
-        )}
 
         {/* Profile Tab */}
         {activeTab === 'profile' && (
-          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+          <Card>
             <h2 className="text-xl font-bold mb-6">Profile Information</h2>
             
             <form onSubmit={handleSaveProfile} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Photo de profil avec upload */}
-                <div className="md:col-span-2">
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 block">
-                    Profile Picture
-                  </label>
-                  <div className="flex items-center gap-6">
-                    <div className="relative group">
-                      <div className="w-24 h-24 rounded-full bg-primary/10 overflow-hidden border-2 border-primary/30">
-                        <img 
-                          src={formData.profilePicture || "https://lh3.googleusercontent.com/aida-public/AB6AXuD050YU9gFVp7RLrMz66Ea84hjGCtiuOA2XBNzDe6Wj_ew6M8Aq8o1D2Dw2GT7IPq1CTc3JSGihS55VOzIXxZreUy4ABv2uD4YV1KySw6ayJ36um8P7G24bRZ8LHFuoeRD67Q1vgqh-Zt1m2wcEjc29nrBILEMXSKDCGOGrwqEwfMhyyrPcrwuMuQDdhrgFsGuALJ1olnyYODNGjCnhhX1VoMub0LEV6dMOri2siuaLrbVsBZJPL6hgVSUv5YCtBwSzlYXfw-HfbRdY"}
-                          alt="Profile"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      
-                      {/* Bouton d'upload qui apparaît au survol */}
-                      <label className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleProfilePictureUpload}
-                          className="hidden"
-                          disabled={uploadingProfile}
-                        />
-                        <span className="material-symbols-outlined text-white">
-                          {uploadingProfile ? 'hourglass_empty' : 'photo_camera'}
-                        </span>
-                      </label>
-                    </div>
-                    
-                    <div className="flex-1">
-                      <p className="text-sm text-slate-600 dark:text-slate-400">
-                        {uploadingProfile ? 'Upload en cours...' : 'Cliquez sur l\'image pour modifier'}
-                      </p>
-                      <p className="text-xs text-slate-500 mt-1">
-                        Formats acceptés: JPG, PNG, GIF. Max 5MB.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Photo de couverture avec upload */}
-                <div className="md:col-span-2">
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 block">
-                    Cover Picture
-                  </label>
-                  <div className="relative group h-32 bg-slate-100 dark:bg-slate-800 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
-                    {formData.coverPicture ? (
-                      <img 
-                        src={formData.coverPicture} 
-                        alt="Cover"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-slate-400">
-                        <span className="material-symbols-outlined text-4xl">image</span>
-                      </div>
-                    )}
-                    
-                    {/* Bouton d'upload qui apparaît au survol */}
-                    <label className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleCoverPictureUpload}
-                        className="hidden"
-                        disabled={uploadingCover}
-                      />
-                      <span className="material-symbols-outlined text-white">
-                        {uploadingCover ? 'hourglass_empty' : 'photo_camera'}
-                      </span>
+                {/* Uploads */}
+                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 block">
+                      Profile Picture
                     </label>
+                    <ImageUploader
+                      currentImage={formData.profilePicture}
+                      onUpload={handleProfilePictureUpload}
+                      type="profile"
+                      isUploading={uploading.profile}
+                      maxSize={2}
+                    />
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">
-                    {uploadingCover ? 'Upload en cours...' : 'Cliquez pour changer la photo de couverture (1500x500px recommandé)'}
-                  </p>
+
+                  <div>
+                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 block">
+                      Cover Picture
+                    </label>
+                    <ImageUploader
+                      currentImage={formData.coverPicture}
+                      onUpload={handleCoverPictureUpload}
+                      type="cover"
+                      isUploading={uploading.cover}
+                      maxSize={5}
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -585,7 +471,6 @@ const handleCoverPictureUpload = async (e) => {
                     disabled
                     className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm bg-slate-50 dark:bg-slate-900 text-slate-500 cursor-not-allowed"
                   />
-                  <p className="text-xs text-slate-500">Email cannot be changed</p>
                 </div>
 
                 <div className="space-y-2">
@@ -631,10 +516,22 @@ const handleCoverPictureUpload = async (e) => {
                     className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm"
                   >
                     <option value="">Select department</option>
-                    {departments.map(dept => (
+                    {DEPARTMENTS.map(dept => (
                       <option key={dept} value={dept}>{dept}</option>
                     ))}
                   </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Website</label>
+                  <input
+                    type="url"
+                    name="website"
+                    value={formData.website || ''}
+                    onChange={handleInputChange}
+                    placeholder="https://..."
+                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm"
+                  />
                 </div>
 
                 <div className="md:col-span-2 space-y-2">
@@ -651,23 +548,22 @@ const handleCoverPictureUpload = async (e) => {
               </div>
 
               <div className="flex justify-end pt-4 border-t border-slate-200 dark:border-slate-800">
-                <button
+                <Button
                   type="submit"
-                  disabled={saving}
-                  className="px-6 py-2.5 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 transition-all disabled:opacity-50"
+                  variant="primary"
+                  loading={saving}
                 >
-                  {saving ? 'Saving...' : 'Save Changes'}
-                </button>
+                  Save Changes
+                </Button>
               </div>
             </form>
-          </div>
+          </Card>
         )}
 
         {/* Skills Tab */}
         {activeTab === 'skills' && (
           <div className="space-y-6">
-            {/* Liste des compétences */}
-            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+            <Card>
               <h2 className="text-xl font-bold mb-6">Your Skills</h2>
               
               {profile.skills && profile.skills.length > 0 ? (
@@ -685,26 +581,24 @@ const handleCoverPictureUpload = async (e) => {
                           <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{skill.description}</p>
                         )}
                         <p className="text-xs text-slate-500 mt-1">
-                          {skill.yearsOfExperience || 0} years experience • {skill.endorsements?.length || 0} endorsements
+                          {skill.yearsOfExperience || 0} years experience
                         </p>
                       </div>
-                      <button
-                        onClick={() => handleDeleteSkill(skill._id)}
-                        className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                        disabled={saving}
-                      >
-                        <span className="material-symbols-outlined">delete</span>
-                      </button>
+                      <Button
+                        variant="ghost"
+                        size="small"
+                        icon="delete"
+                        onClick={() => confirmDeleteSkill(skill._id)}
+                      />
                     </div>
                   ))}
                 </div>
               ) : (
                 <p className="text-slate-500 text-center py-8">No skills added yet</p>
               )}
-            </div>
+            </Card>
 
-            {/* Ajouter une compétence */}
-            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+            <Card>
               <h2 className="text-xl font-bold mb-6">Add New Skill</h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -726,7 +620,7 @@ const handleCoverPictureUpload = async (e) => {
                     onChange={(e) => setNewSkill({...newSkill, level: e.target.value})}
                     className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm"
                   >
-                    {skillLevels.map(level => (
+                    {SKILL_LEVELS.map(level => (
                       <option key={level} value={level}>{level}</option>
                     ))}
                   </select>
@@ -755,29 +649,30 @@ const handleCoverPictureUpload = async (e) => {
                 </div>
               </div>
               
-              <button
-                onClick={handleAddSkill}
-                disabled={saving}
-                className="mt-4 px-6 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 transition-all disabled:opacity-50 flex items-center gap-2"
-              >
-                <span className="material-symbols-outlined text-sm">add</span>
-                Add Skill
-              </button>
-            </div>
+              <div className="mt-4 flex justify-end">
+                <Button
+                  onClick={handleAddSkill}
+                  variant="primary"
+                  icon="add"
+                  loading={saving}
+                >
+                  Add Skill
+                </Button>
+              </div>
+            </Card>
           </div>
         )}
 
         {/* Projects Tab */}
         {activeTab === 'projects' && (
           <div className="space-y-6">
-            {/* Liste des projets */}
-            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+            <Card>
               <h2 className="text-xl font-bold mb-6">Your Projects</h2>
               
               {profile.projects && profile.projects.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {profile.projects.map((project, index) => (
-                    <div key={index} className="group relative bg-slate-50 dark:bg-slate-800/50 rounded-lg overflow-hidden border border-slate-100 dark:border-slate-700">
+                    <Card key={index} padding="none" className="overflow-hidden">
                       {project.imageUrl && (
                         <div className="h-40 w-full">
                           <img src={project.imageUrl} alt={project.title} className="w-full h-full object-cover" />
@@ -786,13 +681,12 @@ const handleCoverPictureUpload = async (e) => {
                       <div className="p-4">
                         <div className="flex justify-between items-start">
                           <h3 className="font-bold text-slate-900 dark:text-white">{project.title}</h3>
-                          <button
-                            onClick={() => handleDeleteProject(project._id)}
-                            className="p-1 text-red-500 hover:bg-red-100 rounded"
-                            disabled={saving}
-                          >
-                            <span className="material-symbols-outlined text-sm">delete</span>
-                          </button>
+                          <Button
+                            variant="ghost"
+                            size="small"
+                            icon="delete"
+                            onClick={() => confirmDeleteProject(project._id)}
+                          />
                         </div>
                         <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 line-clamp-2">{project.description}</p>
                         {project.technologies && project.technologies.length > 0 && (
@@ -805,16 +699,15 @@ const handleCoverPictureUpload = async (e) => {
                           </div>
                         )}
                       </div>
-                    </div>
+                    </Card>
                   ))}
                 </div>
               ) : (
                 <p className="text-slate-500 text-center py-8">No projects added yet</p>
               )}
-            </div>
+            </Card>
 
-            {/* Ajouter un projet */}
-            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+            <Card>
               <h2 className="text-xl font-bold mb-6">Add New Project</h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -839,7 +732,7 @@ const handleCoverPictureUpload = async (e) => {
                 </div>
                 
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Technologies (comma separated)</label>
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Technologies</label>
                   <input
                     type="text"
                     value={newProject.technologies}
@@ -847,6 +740,7 @@ const handleCoverPictureUpload = async (e) => {
                     placeholder="React, Node.js, MongoDB"
                     className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm"
                   />
+                  <p className="text-xs text-slate-500">Séparées par des virgules</p>
                 </div>
                 
                 <div className="space-y-2">
@@ -917,23 +811,24 @@ const handleCoverPictureUpload = async (e) => {
                 </div>
               </div>
               
-              <button
-                onClick={handleAddProject}
-                disabled={saving}
-                className="mt-4 px-6 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 transition-all disabled:opacity-50 flex items-center gap-2"
-              >
-                <span className="material-symbols-outlined text-sm">add</span>
-                Add Project
-              </button>
-            </div>
+              <div className="mt-4 flex justify-end">
+                <Button
+                  onClick={handleAddProject}
+                  variant="primary"
+                  icon="add"
+                  loading={saving}
+                >
+                  Add Project
+                </Button>
+              </div>
+            </Card>
           </div>
         )}
 
         {/* Experience Tab */}
         {activeTab === 'experience' && (
           <div className="space-y-6">
-            {/* Liste des expériences */}
-            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+            <Card>
               <h2 className="text-xl font-bold mb-6">Work Experience</h2>
               
               {profile.experiences && profile.experiences.length > 0 ? (
@@ -950,23 +845,21 @@ const handleCoverPictureUpload = async (e) => {
                           <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">{exp.description}</p>
                         )}
                       </div>
-                      <button
-                        onClick={() => handleDeleteExperience(exp._id)}
-                        className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
-                        disabled={saving}
-                      >
-                        <span className="material-symbols-outlined">delete</span>
-                      </button>
+                      <Button
+                        variant="ghost"
+                        size="small"
+                        icon="delete"
+                        onClick={() => confirmDeleteExperience(exp._id)}
+                      />
                     </div>
                   ))}
                 </div>
               ) : (
                 <p className="text-slate-500 text-center py-8">No experience added yet</p>
               )}
-            </div>
+            </Card>
 
-            {/* Ajouter une expérience */}
-            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+            <Card>
               <h2 className="text-xl font-bold mb-6">Add Work Experience</h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1049,21 +942,23 @@ const handleCoverPictureUpload = async (e) => {
                 </div>
               </div>
               
-              <button
-                onClick={handleAddExperience}
-                disabled={saving}
-                className="mt-4 px-6 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 transition-all disabled:opacity-50 flex items-center gap-2"
-              >
-                <span className="material-symbols-outlined text-sm">add</span>
-                Add Experience
-              </button>
-            </div>
+              <div className="mt-4 flex justify-end">
+                <Button
+                  onClick={handleAddExperience}
+                  variant="primary"
+                  icon="add"
+                  loading={saving}
+                >
+                  Add Experience
+                </Button>
+              </div>
+            </Card>
           </div>
         )}
 
         {/* Password Tab */}
         {activeTab === 'password' && (
-          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+          <Card>
             <h2 className="text-xl font-bold mb-6">Change Password</h2>
             
             <form onSubmit={handleChangePassword} className="space-y-6 max-w-md">
@@ -1105,17 +1000,38 @@ const handleCoverPictureUpload = async (e) => {
               </div>
 
               <div className="flex justify-end pt-4">
-                <button
+                <Button
                   type="submit"
-                  disabled={saving}
-                  className="px-6 py-2.5 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 transition-all disabled:opacity-50"
+                  variant="primary"
+                  loading={saving}
                 >
-                  {saving ? 'Updating...' : 'Update Password'}
-                </button>
+                  Update Password
+                </Button>
               </div>
             </form>
-          </div>
+          </Card>
         )}
+
+        {/* Confirmation Dialog pour les suppressions */}
+        <ConfirmationDialog
+          isOpen={showDeleteDialog}
+          onClose={() => {
+            setShowDeleteDialog(false);
+            setDeleteTarget(null);
+            setDeleteType(null);
+          }}
+          onConfirm={() => {
+            if (deleteType === 'skill') handleDeleteSkill();
+            else if (deleteType === 'project') handleDeleteProject();
+            else if (deleteType === 'experience') handleDeleteExperience();
+          }}
+          title={`Supprimer ${deleteType === 'skill' ? 'cette compétence' : deleteType === 'project' ? 'ce projet' : 'cette expérience'}`}
+          message={`Êtes-vous sûr de vouloir supprimer ${deleteType === 'skill' ? 'cette compétence' : deleteType === 'project' ? 'ce projet' : 'cette expérience'} ? Cette action est irréversible.`}
+          confirmText="Supprimer"
+          cancelText="Annuler"
+          variant="danger"
+          loading={saving}
+        />
       </main>
     </div>
   );

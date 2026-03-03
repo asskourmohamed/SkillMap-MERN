@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { ToastProvider } from './context/ToastContext';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
@@ -22,34 +23,36 @@ const ProtectedRoute = ({ children }) => {
 function App() {
   return (
     <Router>
-      <Routes>
-        {/* Pages publiques */}
-        <Route path="/" element={<HomePage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
-        
-        {/* Pages protégées */}
-        <Route path="/app/discovery" element={
-          <ProtectedRoute>
-            <DiscoveryPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/app/profile/:id" element={
-          <ProtectedRoute>
-            <ProfilePage />
-          </ProtectedRoute>
-        } />
-        <Route path="/app/my-profile" element={
-          <ProtectedRoute>
-            <ProfilePage />
-          </ProtectedRoute>
-        } />
-        <Route path="/app/settings" element={
-          <ProtectedRoute>
-            <SettingsPage />
-          </ProtectedRoute>
-        } />
-      </Routes>
+      <ToastProvider>
+        <Routes>
+          {/* Pages publiques */}
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          
+          {/* Pages protégées */}
+          <Route path="/app/discovery" element={
+            <ProtectedRoute>
+              <DiscoveryPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/app/profile/:id" element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/app/my-profile" element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/app/settings" element={
+            <ProtectedRoute>
+              <SettingsPage />
+            </ProtectedRoute>
+          } />
+        </Routes>
+      </ToastProvider>
     </Router>
   );
 }
