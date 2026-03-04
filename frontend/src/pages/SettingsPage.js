@@ -2,17 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppHeader from '../components/Layout/AppHeader';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
-import ErrorMessage from '../components/Common/ErrorMessage';
-import SuccessMessage from '../components/Common/SuccessMessage';
-import ImageUploader from '../components/Common/ImageUploader';
 import ConfirmationDialog from '../components/Common/ConfirmationDialog';
-import Button from '../components/UI/Button';
-import Card from '../components/UI/Card';
+import SettingsTabs from '../components/Settings/SettingsTabs';
+import ProfileInfoTab from '../components/Settings/ProfileInfoTab';
+import SkillsManager from '../components/Settings/SkillsManager';
+import ProjectsManager from '../components/Settings/ProjectsManager';
+import ExperienceManager from '../components/Settings/ExperienceManager';
+import PasswordTab from '../components/Settings/PasswordTab';
 import { authService, skillService, projectService, experienceService } from '../services/api';
 import { uploadService } from '../services/uploadService';
-import { DEPARTMENTS, SKILL_LEVELS } from '../utils/constants';
-import { useToast } from '../context/ToastContext';
 import { cvService } from '../services/cvService';
+import { useToast } from '../context/ToastContext';
+import Card from '../components/UI/Card';
+import Button from '../components/UI/Button';
 const SettingsPage = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -20,12 +22,11 @@ const SettingsPage = () => {
   const [formData, setFormData] = useState({});
   const [activeTab, setActiveTab] = useState('profile');
   const [uploading, setUploading] = useState({ profile: false, cover: false });
+  const [uploadingCV, setUploadingCV] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteType, setDeleteType] = useState(null);
-  const toast = useToast();
-  const [cvFile, setCvFile] = useState(null);
-  const [uploadingCV, setUploadingCV] = useState(false);
+  
   // États pour les nouveaux éléments
   const [newSkill, setNewSkill] = useState({
     name: '',
@@ -63,6 +64,7 @@ const SettingsPage = () => {
     confirmPassword: ''
   });
 
+  const toast = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -97,15 +99,14 @@ const SettingsPage = () => {
     });
   };
 
-  // ========== GESTION DES UPLOADS ==========
+  // Uploads
   const handleProfilePictureUpload = async (file) => {
     setUploading(prev => ({ ...prev, profile: true }));
-    
     try {
       const response = await uploadService.uploadProfilePicture(file);
       setFormData(prev => ({ ...prev, profilePicture: response.data.data.profilePicture }));
       toast.success('Photo de profil mise à jour avec succès !');
-      // Mettre à jour localStorage
+      
       const userStr = localStorage.getItem('user');
       if (userStr) {
         const user = JSON.parse(userStr);
@@ -122,7 +123,6 @@ const SettingsPage = () => {
 
   const handleCoverPictureUpload = async (file) => {
     setUploading(prev => ({ ...prev, cover: true }));
-    
     try {
       const response = await uploadService.uploadCoverPicture(file);
       setFormData(prev => ({ ...prev, coverPicture: response.data.data.coverPicture }));
@@ -133,7 +133,7 @@ const SettingsPage = () => {
     }
   };
 
-  // ========== GESTION DES COMPÉTENCES ==========
+  // Skills
   const handleAddSkill = async () => {
     if (!newSkill.name) {
       toast.error('Le nom de la compétence est requis');
@@ -141,7 +141,6 @@ const SettingsPage = () => {
     }
 
     setSaving(true);
-    
     try {
       const skillData = {
         ...newSkill,
@@ -173,7 +172,6 @@ const SettingsPage = () => {
 
   const handleDeleteSkill = async () => {
     setSaving(true);
-    
     try {
       await skillService.deleteSkill(profile._id, deleteTarget);
       await fetchProfile();
@@ -181,7 +179,7 @@ const SettingsPage = () => {
       setShowDeleteDialog(false);
     } catch (error) {
       console.error('Erreur suppression compétence:', error);
-      toast.success('Compétence supprimée avec succès !');
+      toast.error(error.response?.data?.error || 'Erreur lors de la suppression');
     } finally {
       setSaving(false);
       setDeleteTarget(null);
@@ -189,7 +187,7 @@ const SettingsPage = () => {
     }
   };
 
-  // ========== GESTION DES PROJETS ==========
+  // Projects
   const handleAddProject = async () => {
     if (!newProject.title) {
       toast.error('Le titre du projet est requis');
@@ -197,7 +195,6 @@ const SettingsPage = () => {
     }
 
     setSaving(true);
-    
     try {
       const projectData = {
         ...newProject,
@@ -237,7 +234,6 @@ const SettingsPage = () => {
 
   const handleDeleteProject = async () => {
     setSaving(true);
-    
     try {
       await projectService.deleteProject(profile._id, deleteTarget);
       await fetchProfile();
@@ -253,15 +249,14 @@ const SettingsPage = () => {
     }
   };
 
-  // ========== GESTION DES EXPÉRIENCES ==========
+  // Experiences
   const handleAddExperience = async () => {
     if (!newExperience.title || !newExperience.company) {
-      toast.error('Le titre et l\'entreprise sont requis pour l\'expérience');
+      toast.error('Le titre et l\'entreprise sont requis');
       return;
     }
 
     setSaving(true);
-    
     try {
       const expData = {
         ...newExperience,
@@ -297,7 +292,6 @@ const SettingsPage = () => {
 
   const handleDeleteExperience = async () => {
     setSaving(true);
-    
     try {
       await experienceService.deleteExperience(profile._id, deleteTarget);
       await fetchProfile();
@@ -312,57 +306,57 @@ const SettingsPage = () => {
       setDeleteType(null);
     }
   };
-  // ========== GESTION DU CV ==========
+
+  // CV
   const handleCVUpload = async (file) => {
-  if (!file) return;
+    if (!file) return;
 
-  // Validation
-  const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-  if (!allowedTypes.includes(file.type)) {
-    toast.error('Format non supporté. Utilisez PDF, DOC ou DOCX');
-    return;
-  }
+    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Format non supporté. Utilisez PDF, DOC ou DOCX');
+      return;
+    }
 
-  if (file.size > 10 * 1024 * 1024) {
-    toast.error('Le fichier ne doit pas dépasser 10MB');
-    return;
-  }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Le fichier ne doit pas dépasser 10MB');
+      return;
+    }
 
-  setUploadingCV(true);
-
-  try {
-    const response = await cvService.uploadCV(file);
-    setProfile(prev => ({ ...prev, cv: response.data.data }));
-    toast.success('CV uploadé avec succès !');
-  } catch (error) {
-    console.error('Erreur upload CV:', error);
-    toast.error(error.response?.data?.error || 'Erreur lors de l\'upload');
-  } finally {
-    setUploadingCV(false);
-  }
-};
+    setUploadingCV(true);
+    try {
+      const response = await cvService.uploadCV(file);
+      setProfile(prev => ({ ...prev, cv: response.data.data }));
+      toast.success('CV uploadé avec succès !');
+    } catch (error) {
+      console.error('Erreur upload CV:', error);
+      toast.error(error.response?.data?.error || 'Erreur lors de l\'upload');
+    } finally {
+      setUploadingCV(false);
+    }
+  };
 
   const handleDeleteCV = async () => {
-  if (!window.confirm('Êtes-vous sûr de vouloir supprimer votre CV ?')) return;
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer votre CV ?')) return;
 
-  try {
-    await cvService.deleteCV();
-    setProfile(prev => {
-      const newProfile = { ...prev };
-      delete newProfile.cv;
-      return newProfile;
-    });
-    toast.success('CV supprimé avec succès');
-  } catch (error) {
-    console.error('Erreur suppression CV:', error);
-    toast.error(error.response?.data?.error || 'Erreur lors de la suppression');
-  }
-};
+    try {
+      await cvService.deleteCV();
+      setProfile(prev => {
+        const newProfile = { ...prev };
+        delete newProfile.cv;
+        return newProfile;
+      });
+      toast.success('CV supprimé avec succès');
+    } catch (error) {
+      console.error('Erreur suppression CV:', error);
+      toast.error(error.response?.data?.error || 'Erreur lors de la suppression');
+    }
+  };
 
   const handleDownloadPDF = () => {
-  cvService.downloadPDF(profile._id);
-};
-  // ========== GESTION DU PROFIL ==========
+    cvService.downloadPDF(profile._id);
+  };
+
+  // Profile
   const handleSaveProfile = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -388,6 +382,7 @@ const SettingsPage = () => {
     }
   };
 
+  // Password
   const handleChangePassword = async (e) => {
     e.preventDefault();
     
@@ -431,15 +426,6 @@ const SettingsPage = () => {
     );
   }
 
-  const tabs = [
-    { id: 'profile', label: 'Profile Info', icon: 'person' },
-    { id: 'skills', label: 'Skills', icon: 'verified' },
-    { id: 'projects', label: 'Projects', icon: 'work' },
-    { id: 'experience', label: 'Experience', icon: 'business_center' },
-    { id: 'cv', label: 'CV & Documents', icon: 'description' },
-    { id: 'password', label: 'Password', icon: 'lock' }
-  ];
-
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark">
       <AppHeader user={profile} />
@@ -450,571 +436,58 @@ const SettingsPage = () => {
           <p className="text-slate-600 dark:text-slate-400 mt-1">Manage your account settings and profile information</p>
         </div>
 
-        {/* Tabs */}
-        <div className="flex border-b border-slate-200 dark:border-slate-800 mb-8 overflow-x-auto">
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-6 py-3 border-b-2 font-bold text-sm flex items-center gap-2 whitespace-nowrap transition-colors ${
-                activeTab === tab.id
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
-              }`}
-            >
-              <span className="material-symbols-outlined text-lg">{tab.icon}</span>
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        <SettingsTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
-        {/* Profile Tab */}
         {activeTab === 'profile' && (
-          <Card>
-            <h2 className="text-xl font-bold mb-6">Profile Information</h2>
-            
-            <form onSubmit={handleSaveProfile} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Uploads */}
-                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 block">
-                      Profile Picture
-                    </label>
-                    <ImageUploader
-                      currentImage={formData.profilePicture}
-                      onUpload={handleProfilePictureUpload}
-                      type="profile"
-                      isUploading={uploading.profile}
-                      maxSize={2}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 block">
-                      Cover Picture
-                    </label>
-                    <ImageUploader
-                      currentImage={formData.coverPicture}
-                      onUpload={handleCoverPictureUpload}
-                      type="cover"
-                      isUploading={uploading.cover}
-                      maxSize={5}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Full Name</label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name || ''}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm focus:ring-1 focus:ring-primary focus:border-primary"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Email</label>
-                  <input
-                    type="email"
-                    value={formData.email || ''}
-                    disabled
-                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm bg-slate-50 dark:bg-slate-900 text-slate-500 cursor-not-allowed"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Job Title</label>
-                  <input
-                    type="text"
-                    name="jobTitle"
-                    value={formData.jobTitle || ''}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Company</label>
-                  <input
-                    type="text"
-                    name="company"
-                    value={formData.company || ''}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Location</label>
-                  <input
-                    type="text"
-                    name="location"
-                    value={formData.location || ''}
-                    onChange={handleInputChange}
-                    placeholder="City, Country"
-                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Department</label>
-                  <select
-                    name="department"
-                    value={formData.department || ''}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm"
-                  >
-                    <option value="">Select department</option>
-                    {DEPARTMENTS.map(dept => (
-                      <option key={dept} value={dept}>{dept}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Website</label>
-                  <input
-                    type="url"
-                    name="website"
-                    value={formData.website || ''}
-                    onChange={handleInputChange}
-                    placeholder="https://..."
-                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm"
-                  />
-                </div>
-
-                <div className="md:col-span-2 space-y-2">
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Bio</label>
-                  <textarea
-                    name="bio"
-                    value={formData.bio || ''}
-                    onChange={handleInputChange}
-                    rows="4"
-                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm resize-none"
-                    placeholder="Tell us about yourself..."
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end pt-4 border-t border-slate-200 dark:border-slate-800">
-                <Button
-                  type="submit"
-                  variant="primary"
-                  loading={saving}
-                >
-                  Save Changes
-                </Button>
-              </div>
-            </form>
-          </Card>
+          <ProfileInfoTab
+            formData={formData}
+            onInputChange={handleInputChange}
+            onSave={handleSaveProfile}
+            onUploadProfile={handleProfilePictureUpload}
+            onUploadCover={handleCoverPictureUpload}
+            uploading={uploading}
+            saving={saving}
+          />
         )}
 
-        {/* Skills Tab */}
         {activeTab === 'skills' && (
-          <div className="space-y-6">
-            <Card>
-              <h2 className="text-xl font-bold mb-6">Your Skills</h2>
-              
-              {profile.skills && profile.skills.length > 0 ? (
-                <div className="space-y-4">
-                  {profile.skills.map((skill, index) => (
-                    <div key={index} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-bold text-slate-900 dark:text-white">{skill.name}</h3>
-                          <span className="px-2 py-0.5 bg-primary/10 text-primary text-xs font-semibold rounded-full">
-                            {skill.level}
-                          </span>
-                        </div>
-                        {skill.description && (
-                          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{skill.description}</p>
-                        )}
-                        <p className="text-xs text-slate-500 mt-1">
-                          {skill.yearsOfExperience || 0} years experience
-                        </p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="small"
-                        icon="delete"
-                        onClick={() => confirmDeleteSkill(skill._id)}
-                      />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-slate-500 text-center py-8">No skills added yet</p>
-              )}
-            </Card>
-
-            <Card>
-              <h2 className="text-xl font-bold mb-6">Add New Skill</h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Skill Name *</label>
-                  <input
-                    type="text"
-                    value={newSkill.name}
-                    onChange={(e) => setNewSkill({...newSkill, name: e.target.value})}
-                    placeholder="e.g., React, Python, Figma"
-                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Level</label>
-                  <select
-                    value={newSkill.level}
-                    onChange={(e) => setNewSkill({...newSkill, level: e.target.value})}
-                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm"
-                  >
-                    {SKILL_LEVELS.map(level => (
-                      <option key={level} value={level}>{level}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Years Experience</label>
-                  <input
-                    type="number"
-                    value={newSkill.yearsOfExperience}
-                    onChange={(e) => setNewSkill({...newSkill, yearsOfExperience: e.target.value})}
-                    placeholder="5"
-                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm"
-                  />
-                </div>
-                
-                <div className="space-y-2 md:col-span-2">
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Description (optional)</label>
-                  <input
-                    type="text"
-                    value={newSkill.description}
-                    onChange={(e) => setNewSkill({...newSkill, description: e.target.value})}
-                    placeholder="Brief description of your expertise"
-                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm"
-                  />
-                </div>
-              </div>
-              
-              <div className="mt-4 flex justify-end">
-                <Button
-                  onClick={handleAddSkill}
-                  variant="primary"
-                  icon="add"
-                  loading={saving}
-                >
-                  Add Skill
-                </Button>
-              </div>
-            </Card>
-          </div>
+          <SkillsManager
+            skills={profile.skills || []}
+            newSkill={newSkill}
+            onNewSkillChange={setNewSkill}
+            onAddSkill={handleAddSkill}
+            onDeleteSkill={confirmDeleteSkill}
+            saving={saving}
+          />
         )}
 
-        {/* Projects Tab */}
         {activeTab === 'projects' && (
-          <div className="space-y-6">
-            <Card>
-              <h2 className="text-xl font-bold mb-6">Your Projects</h2>
-              
-              {profile.projects && profile.projects.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {profile.projects.map((project, index) => (
-                    <Card key={index} padding="none" className="overflow-hidden">
-                      {project.imageUrl && (
-                        <div className="h-40 w-full">
-                          <img src={project.imageUrl} alt={project.title} className="w-full h-full object-cover" />
-                        </div>
-                      )}
-                      <div className="p-4">
-                        <div className="flex justify-between items-start">
-                          <h3 className="font-bold text-slate-900 dark:text-white">{project.title}</h3>
-                          <Button
-                            variant="ghost"
-                            size="small"
-                            icon="delete"
-                            onClick={() => confirmDeleteProject(project._id)}
-                          />
-                        </div>
-                        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 line-clamp-2">{project.description}</p>
-                        {project.technologies && project.technologies.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {project.technologies.map((tech, i) => (
-                              <span key={i} className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">
-                                {tech}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-slate-500 text-center py-8">No projects added yet</p>
-              )}
-            </Card>
-
-            <Card>
-              <h2 className="text-xl font-bold mb-6">Add New Project</h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2 md:col-span-2">
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Project Title *</label>
-                  <input
-                    type="text"
-                    value={newProject.title}
-                    onChange={(e) => setNewProject({...newProject, title: e.target.value})}
-                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm"
-                  />
-                </div>
-                
-                <div className="space-y-2 md:col-span-2">
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Description</label>
-                  <textarea
-                    value={newProject.description}
-                    onChange={(e) => setNewProject({...newProject, description: e.target.value})}
-                    rows="3"
-                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Technologies</label>
-                  <input
-                    type="text"
-                    value={newProject.technologies}
-                    onChange={(e) => setNewProject({...newProject, technologies: e.target.value})}
-                    placeholder="React, Node.js, MongoDB"
-                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm"
-                  />
-                  <p className="text-xs text-slate-500">Séparées par des virgules</p>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Role</label>
-                  <input
-                    type="text"
-                    value={newProject.role}
-                    onChange={(e) => setNewProject({...newProject, role: e.target.value})}
-                    placeholder="Lead Developer"
-                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Image URL</label>
-                  <input
-                    type="url"
-                    value={newProject.imageUrl}
-                    onChange={(e) => setNewProject({...newProject, imageUrl: e.target.value})}
-                    placeholder="https://..."
-                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Project URL</label>
-                  <input
-                    type="url"
-                    value={newProject.projectUrl}
-                    onChange={(e) => setNewProject({...newProject, projectUrl: e.target.value})}
-                    placeholder="https://..."
-                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Start Date</label>
-                  <input
-                    type="date"
-                    value={newProject.startDate}
-                    onChange={(e) => setNewProject({...newProject, startDate: e.target.value})}
-                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">End Date</label>
-                  <input
-                    type="date"
-                    value={newProject.endDate}
-                    onChange={(e) => setNewProject({...newProject, endDate: e.target.value})}
-                    disabled={newProject.isCurrent}
-                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm disabled:bg-slate-50"
-                  />
-                </div>
-                
-                <div className="flex items-center gap-2 md:col-span-2">
-                  <input
-                    type="checkbox"
-                    id="isCurrent"
-                    checked={newProject.isCurrent}
-                    onChange={(e) => setNewProject({...newProject, isCurrent: e.target.checked, endDate: ''})}
-                    className="rounded border-slate-300 text-primary focus:ring-primary"
-                  />
-                  <label htmlFor="isCurrent" className="text-sm text-slate-700 dark:text-slate-300">
-                    This is a current project
-                  </label>
-                </div>
-              </div>
-              
-              <div className="mt-4 flex justify-end">
-                <Button
-                  onClick={handleAddProject}
-                  variant="primary"
-                  icon="add"
-                  loading={saving}
-                >
-                  Add Project
-                </Button>
-              </div>
-            </Card>
-          </div>
+          <ProjectsManager
+            projects={profile.projects || []}
+            newProject={newProject}
+            onNewProjectChange={setNewProject}
+            onAddProject={handleAddProject}
+            onDeleteProject={confirmDeleteProject}
+            saving={saving}
+          />
         )}
 
-        {/* Experience Tab */}
         {activeTab === 'experience' && (
-          <div className="space-y-6">
-            <Card>
-              <h2 className="text-xl font-bold mb-6">Work Experience</h2>
-              
-              {profile.experiences && profile.experiences.length > 0 ? (
-                <div className="space-y-4">
-                  {profile.experiences.map((exp, index) => (
-                    <div key={index} className="flex justify-between items-start p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                      <div>
-                        <h3 className="font-bold text-slate-900 dark:text-white">{exp.title}</h3>
-                        <p className="text-sm text-slate-600 dark:text-slate-400">{exp.company} {exp.location ? `• ${exp.location}` : ''}</p>
-                        <p className="text-xs text-slate-500 mt-1">
-                          {exp.startDate ? new Date(exp.startDate).toLocaleDateString() : 'N/A'} - {exp.isCurrent ? 'Present' : exp.endDate ? new Date(exp.endDate).toLocaleDateString() : 'N/A'}
-                        </p>
-                        {exp.description && (
-                          <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">{exp.description}</p>
-                        )}
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="small"
-                        icon="delete"
-                        onClick={() => confirmDeleteExperience(exp._id)}
-                      />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-slate-500 text-center py-8">No experience added yet</p>
-              )}
-            </Card>
-
-            <Card>
-              <h2 className="text-xl font-bold mb-6">Add Work Experience</h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2 md:col-span-2">
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Job Title *</label>
-                  <input
-                    type="text"
-                    value={newExperience.title}
-                    onChange={(e) => setNewExperience({...newExperience, title: e.target.value})}
-                    placeholder="Senior Developer"
-                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Company *</label>
-                  <input
-                    type="text"
-                    value={newExperience.company}
-                    onChange={(e) => setNewExperience({...newExperience, company: e.target.value})}
-                    placeholder="TechFlow Systems"
-                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Location</label>
-                  <input
-                    type="text"
-                    value={newExperience.location}
-                    onChange={(e) => setNewExperience({...newExperience, location: e.target.value})}
-                    placeholder="Paris, France"
-                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Start Date</label>
-                  <input
-                    type="date"
-                    value={newExperience.startDate}
-                    onChange={(e) => setNewExperience({...newExperience, startDate: e.target.value})}
-                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">End Date</label>
-                  <input
-                    type="date"
-                    value={newExperience.endDate}
-                    onChange={(e) => setNewExperience({...newExperience, endDate: e.target.value})}
-                    disabled={newExperience.isCurrent}
-                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm disabled:bg-slate-50"
-                  />
-                </div>
-                
-                <div className="flex items-center gap-2 md:col-span-2">
-                  <input
-                    type="checkbox"
-                    id="expCurrent"
-                    checked={newExperience.isCurrent}
-                    onChange={(e) => setNewExperience({...newExperience, isCurrent: e.target.checked, endDate: ''})}
-                    className="rounded border-slate-300 text-primary focus:ring-primary"
-                  />
-                  <label htmlFor="expCurrent" className="text-sm text-slate-700 dark:text-slate-300">
-                    I currently work here
-                  </label>
-                </div>
-                
-                <div className="space-y-2 md:col-span-2">
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Description</label>
-                  <textarea
-                    value={newExperience.description}
-                    onChange={(e) => setNewExperience({...newExperience, description: e.target.value})}
-                    rows="3"
-                    placeholder="Describe your responsibilities and achievements..."
-                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm"
-                  />
-                </div>
-              </div>
-              
-              <div className="mt-4 flex justify-end">
-                <Button
-                  onClick={handleAddExperience}
-                  variant="primary"
-                  icon="add"
-                  loading={saving}
-                >
-                  Add Experience
-                </Button>
-              </div>
-            </Card>
-          </div>
+          <ExperienceManager
+            experiences={profile.experiences || []}
+            newExperience={newExperience}
+            onNewExperienceChange={setNewExperience}
+            onAddExperience={handleAddExperience}
+            onDeleteExperience={confirmDeleteExperience}
+            saving={saving}
+          />
         )}
-        {/* CV Tab */}
+
         {activeTab === 'cv' && (
           <Card>
             <h2 className="text-xl font-bold mb-6">CV & Documents</h2>
             
             <div className="space-y-6">
-              {/* CV actuel */}
               {profile.cv ? (
                 <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
                   <div className="flex items-center gap-4">
@@ -1053,7 +526,6 @@ const SettingsPage = () => {
                 </div>
               )}
 
-              {/* Upload nouveau CV */}
               <div>
                 <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                   Uploader un nouveau CV
@@ -1078,7 +550,6 @@ const SettingsPage = () => {
                 </div>
               </div>
 
-              {/* Séparateur */}
               <div className="relative my-8">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-slate-200 dark:border-slate-700"></div>
@@ -1088,7 +559,6 @@ const SettingsPage = () => {
                 </div>
               </div>
 
-              {/* Génération PDF */}
               <div>
                 <h3 className="text-lg font-semibold mb-4">Générer un CV depuis votre profil</h3>
                 <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
@@ -1105,63 +575,16 @@ const SettingsPage = () => {
             </div>
           </Card>
         )}
-        {/* Password Tab */}
+
         {activeTab === 'password' && (
-          <Card>
-            <h2 className="text-xl font-bold mb-6">Change Password</h2>
-            
-            <form onSubmit={handleChangePassword} className="space-y-6 max-w-md">
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Current Password</label>
-                <input
-                  type="password"
-                  name="currentPassword"
-                  value={passwordData.currentPassword}
-                  onChange={handlePasswordChange}
-                  required
-                  className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">New Password</label>
-                <input
-                  type="password"
-                  name="newPassword"
-                  value={passwordData.newPassword}
-                  onChange={handlePasswordChange}
-                  required
-                  className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm"
-                />
-                <p className="text-xs text-slate-500">Minimum 6 characters</p>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Confirm New Password</label>
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  value={passwordData.confirmPassword}
-                  onChange={handlePasswordChange}
-                  required
-                  className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm"
-                />
-              </div>
-
-              <div className="flex justify-end pt-4">
-                <Button
-                  type="submit"
-                  variant="primary"
-                  loading={saving}
-                >
-                  Update Password
-                </Button>
-              </div>
-            </form>
-          </Card>
+          <PasswordTab
+            passwordData={passwordData}
+            onPasswordChange={handlePasswordChange}
+            onSubmit={handleChangePassword}
+            saving={saving}
+          />
         )}
 
-        {/* Confirmation Dialog pour les suppressions */}
         <ConfirmationDialog
           isOpen={showDeleteDialog}
           onClose={() => {
