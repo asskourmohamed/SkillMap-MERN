@@ -59,14 +59,32 @@ const uploadCV = multer({
   storage: cvStorage,
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB max
 }).single('cv');
-
+// Configuration pour les posts
+const postMediaStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'posts',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov'],
+    resource_type: 'auto',
+    public_id: (req, file) => {
+      const userId = req.user.id;
+      const timestamp = Date.now();
+      return `post-${userId}-${timestamp}`;
+    }
+  }
+});
 // Middleware d'upload
 const uploadProfilePicture = multer({ storage: profileStorage }).single('profilePicture');
 const uploadCoverPicture = multer({ storage: coverStorage }).single('coverPicture');
+const uploadPostMedia = multer({ 
+  storage: postMediaStorage,
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB max
+}).array('media', 5); // Max 5 fichiers
 
 module.exports = {
   cloudinary,
   uploadProfilePicture,
   uploadCoverPicture,
-  uploadCV
+  uploadCV,
+  uploadPostMedia
 };

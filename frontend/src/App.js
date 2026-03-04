@@ -7,7 +7,7 @@ import SignupPage from './pages/SignupPage';
 import DiscoveryPage from './pages/DiscoveryPage';
 import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
-
+import FeedPage from './pages/FeedPage';
 // Route protégée simple
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('token');
@@ -49,6 +49,11 @@ function App() {
           <Route path="/app/settings" element={
             <ProtectedRoute>
               <SettingsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/app/feed" element={
+            <ProtectedRoute>
+              <FeedPage />
             </ProtectedRoute>
           } />
         </Routes>
