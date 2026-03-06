@@ -55,5 +55,17 @@ export const experienceService = {
   addExperience: (userId, expData) => API.post(`/profiles/${userId}/experiences`, expData),
   deleteExperience: (userId, expId) => API.delete(`/profiles/${userId}/experiences/${expId}`)
 };
+// Dans le fichier api.js, ajoute ces méthodes à adminAPI
 
+export const adminAPI = {
+  getUsers: (params) => API.get('/admin/users', { params }),
+  getUserById: (id) => API.get(`/admin/users/${id}`),
+  createUser: (data) => API.post('/admin/users', data),
+  updateUser: (id, data) => API.put(`/admin/users/${id}`, data),
+  deleteUser: (id) => API.delete(`/admin/users/${id}`),
+  getStats: () => API.get('/admin/stats'),
+  getRecentActivity: () => API.get('/admin/recent-activity'),
+  getSkillTrends: () => API.get('/admin/skill-trends'),
+  getSkillGaps: () => API.get('/admin/skill-gaps')
+};
 export default API;

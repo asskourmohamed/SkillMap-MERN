@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const adminRoutes = require('./routes/admin');
 require('dotenv').config();
 
 const app = express();
@@ -18,6 +19,7 @@ mongoose.connect(process.env.MONGO_URI)
 
 
 app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/admin', adminRoutes);
 app.use('/api/profiles', require('./routes/profileRoutes')); 
 app.use('/api/upload', require('./routes/uploadRoutes'));
 app.use('/api/cv', require('./routes/cvRoutes'));

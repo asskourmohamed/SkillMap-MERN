@@ -43,7 +43,7 @@ const LoginPage = () => {
         console.log('✅ Nouvel utilisateur connecté:', response.data.data.email);
         
         // Rediriger vers Discovery
-        navigate('/app/discovery');
+        navigate('/app/feed');
       } else {
         setError(response.data.error || 'Erreur de connexion');
       }
