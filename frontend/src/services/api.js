@@ -55,17 +55,40 @@ export const experienceService = {
   addExperience: (userId, expData) => API.post(`/profiles/${userId}/experiences`, expData),
   deleteExperience: (userId, expId) => API.delete(`/profiles/${userId}/experiences/${expId}`)
 };
-// Dans le fichier api.js, ajoute ces méthodes à adminAPI
+// À la fin du fichier, assure-toi que tout est exporté
+export const authAPI = {
+  login: (data) => API.post('/auth/login', data),
+  register: (data) => API.post('/auth/register', data),
+  getMe: () => API.get('/auth/me'),
+};
+
+export const userAPI = {
+  getAll: () => API.get('/users'),
+  getById: (id) => API.get(`/users/${id}`),
+  update: (id, data) => API.put(`/users/${id}`, data),
+};
+
+export const skillAPI = {
+  getAll: () => API.get('/skills'),
+  getById: (id) => API.get(`/skills/${id}`),
+  create: (data) => API.post('/skills', data),
+  update: (id, data) => API.put(`/skills/${id}`, data),
+  delete: (id) => API.delete(`/skills/${id}`),
+};
+
+export const mentorshipAPI = {
+  getMyMentorships: () => API.get('/mentorships/my-mentorships'),
+  createRequest: (data) => API.post('/mentorships/request', data),
+  respondToRequest: (id, data) => API.put(`/mentorships/${id}/respond`, data),
+};
 
 export const adminAPI = {
   getUsers: (params) => API.get('/admin/users', { params }),
-  getUserById: (id) => API.get(`/admin/users/${id}`),
   createUser: (data) => API.post('/admin/users', data),
   updateUser: (id, data) => API.put(`/admin/users/${id}`, data),
   deleteUser: (id) => API.delete(`/admin/users/${id}`),
   getStats: () => API.get('/admin/stats'),
-  getRecentActivity: () => API.get('/admin/recent-activity'),
   getSkillTrends: () => API.get('/admin/skill-trends'),
-  getSkillGaps: () => API.get('/admin/skill-gaps')
 };
+
 export default API;
