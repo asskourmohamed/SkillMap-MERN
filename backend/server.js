@@ -17,9 +17,8 @@ mongoose.connect(process.env.MONGO_URI)
   .catch(err => console.log('MongoDB not connected', err));
 
 
-
-app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/admin', adminRoutes);
+app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/profiles', require('./routes/profileRoutes')); 
 app.use('/api/upload', require('./routes/uploadRoutes'));
 app.use('/api/cv', require('./routes/cvRoutes'));
