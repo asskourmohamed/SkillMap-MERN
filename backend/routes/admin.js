@@ -8,43 +8,96 @@ const Mentorship = require('../models/Mentorship');
 const { protect, adminMiddleware } = require('../middleware/auth');
 
 // GET /api/admin/stats
+// GET /api/admin/dashboard
 router.get('/stats', protect, adminMiddleware, async (req, res) => {
   try {
-    const totalUsers = await User.countDocuments();
-    const totalSkills = await Skill.countDocuments();
-    const totalMentorships = await Mentorship.countDocuments();
-    
-    const activeMentorships = await Mentorship.countDocuments({ status: 'active' });
-    const pendingMentorships = await Mentorship.countDocuments({ status: 'pending' });
-    
-    // Utilisateurs par département
-    const usersByDepartment = await User.aggregate([
-      { $group: { _id: '$department', count: { $sum: 1 } } },
-      { $sort: { count: -1 } }
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const [
+      totalUsers,
+      totalSkills,
+      totalMentorships,
+      activeMentorships,
+      completedMentorships,
+      pendingMentorships,
+      newUsers,
+      recentUsers,
+      topSkills,
+      usersByDepartment
+    ] = await Promise.all([
+      User.countDocuments(),
+      Skill.countDocuments(),
+      Mentorship.countDocuments(),
+      Mentorship.countDocuments({ status: 'active' }),
+      Mentorship.countDocuments({ status: 'completed' }),
+      Mentorship.countDocuments({ status: 'pending' }),
+      User.countDocuments({ createdAt: { $gte: thirtyDaysAgo } }),
+      User.find()
+        .sort('-createdAt')
+        .limit(5)
+        .select('name email createdAt department'),
+      Skill.aggregate([
+        { $group: { 
+          _id: '$title', 
+          count: { $sum: 1 },
+          category: { $first: '$category' }
+        }},
+        { $sort: { count: -1 } },
+        { $limit: 5 }
+      ]),
+      User.aggregate([
+        { $group: { _id: '$department', count: { $sum: 1 } } },
+        { $sort: { count: -1 } }
+      ])
     ]);
+
+    // Calculer le taux d'engagement
+    const engagementRate = totalUsers > 0 
+      ? Math.round((activeMentorships / totalUsers) * 100) 
+      : 0;
+
+    // Calculer la croissance
+    const previousMonthUsers = await User.countDocuments({
+      createdAt: { $lt: thirtyDaysAgo }
+    });
+    const userGrowth = previousMonthUsers > 0 
+      ? Math.round(((totalUsers - previousMonthUsers) / previousMonthUsers) * 100)
+      : 0;
 
     res.json({
       success: true,
       data: {
-        users: {
-          total: totalUsers,
-          byDepartment: usersByDepartment
+        stats: {
+          users: {
+            total: totalUsers,
+            new: newUsers,
+            growth: userGrowth,
+            byDepartment: usersByDepartment
+          },
+          skills: {
+            total: totalSkills,
+            topSkills: topSkills || []
+          },
+          mentorships: {
+            total: totalMentorships,
+            active: activeMentorships,
+            completed: completedMentorships,
+            pending: pendingMentorships,
+            engagementRate: engagementRate
+          }
         },
-        skills: {
-          total: totalSkills
-        },
-        mentorships: {
-          total: totalMentorships,
-          active: activeMentorships,
-          pending: pendingMentorships
-        }
+        recentUsers: recentUsers || [],
+        timestamp: new Date().toISOString()
       }
     });
+
   } catch (error) {
-    console.error('Erreur stats admin:', error);
+    console.error('❌ Erreur dashboard:', error);
     res.status(500).json({ 
       success: false, 
-      error: error.message 
+      error: 'Erreur lors de la récupération du dashboard',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
@@ -94,40 +147,86 @@ router.get('/users', protect, adminMiddleware, async (req, res) => {
 });
 
 // GET /api/admin/skill-gaps
+// GET /api/admin/skill-gaps
 router.get('/skill-gaps', protect, adminMiddleware, async (req, res) => {
   try {
-    const skills = await Skill.find();
+    // Récupérer toutes les compétences
+    const skills = await Skill.find().populate('owner', 'name department');
     
-    // Simuler des données de demande (à remplacer par des données réelles)
-    const skillGaps = await Promise.all(
-      allSkills.map(async skill => ({
+    if (!skills || skills.length === 0) {
+      return res.json({
+        success: true,
+        data: [],
+        message: 'Aucune compétence trouvée'
+      });
+    }
+
+    // Grouper par titre de compétence
+    const skillMap = new Map();
+    
+    skills.forEach(skill => {
+      const key = skill.title;
+      if (!skillMap.has(key)) {
+        skillMap.set(key, {
+          title: skill.title,
+          category: skill.category,
+          level: skill.level,
+          owners: [],
+          supply: 0,
+          demand: Math.floor(Math.random() * 30) + 10 // Simulé pour l'exemple
+        });
+      }
+      
+      const entry = skillMap.get(key);
+      entry.owners.push(skill.owner?.name || 'Inconnu');
+      entry.supply++;
+    });
+
+    // Convertir la Map en tableau et calculer les gaps
+    const skillGaps = Array.from(skillMap.values()).map(skill => {
+      const gap = skill.demand - skill.supply;
+      let status = 'stable';
+      
+      if (gap > 15) status = 'critical';
+      else if (gap > 5) status = 'high';
+      else if (gap < -5) status = 'surplus';
+      
+      return {
         skill: skill.title,
         category: skill.category,
-        supply: await Skill.countDocuments({ title: skill.title }),
-        demand: Math.floor(Math.random() * 50) + 20,
-        level: skill.level
-      }))
-    );
+        level: skill.level,
+        supply: skill.supply,
+        demand: skill.demand,
+        gap: gap,
+        status: status,
+        owners: skill.owners.slice(0, 3) // Top 3 owners
+      };
+    });
 
-    
-    // Calculer le gap
-    const processedGaps = skillGaps.map(gap => ({
-      ...gap,
-      gap: gap.demand - gap.supply,
-      status: gap.demand > gap.supply * 1.5 ? 'critical' : 
-               gap.demand > gap.supply * 1.2 ? 'high' : 
-               gap.demand < gap.supply * 0.5 ? 'surplus' : 'stable'
-    }));
-    
+    // Trier par gap (les plus critiques d'abord)
+    const sortedGaps = skillGaps.sort((a, b) => b.gap - a.gap);
+
+    // Calculer le résumé
+    const summary = {
+      total: sortedGaps.length,
+      critical: sortedGaps.filter(g => g.status === 'critical').length,
+      high: sortedGaps.filter(g => g.status === 'high').length,
+      stable: sortedGaps.filter(g => g.status === 'stable').length,
+      surplus: sortedGaps.filter(g => g.status === 'surplus').length
+    };
+
     res.json({
       success: true,
-      data: processedGaps.sort((a, b) => b.gap - a.gap)
+      data: sortedGaps,
+      summary: summary
     });
+    
   } catch (error) {
-    console.error('Erreur skill gaps:', error);
+    console.error('❌ Erreur skill gaps:', error);
     res.status(500).json({ 
       success: false, 
-      error: error.message 
+      error: 'Erreur lors de la récupération des gaps de compétences',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });

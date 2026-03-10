@@ -77,7 +77,7 @@ const DashboardPage = () => {
             </h1>
           </div>
 
-          <StatsCards stats={stats} />
+          <StatsCards stats={stats} onCardClick={handleCardClick}/>
           
           {/* Le reste du dashboard */}
         </div>
@@ -85,5 +85,30 @@ const DashboardPage = () => {
     </div>
   );
 };
+// Ajoute ces fonctions dans le composant
+const handleCardClick = (cardId) => {
+  switch(cardId) {
+    case 'users':
+      setActiveTab('users');
+      break;
+    case 'skills':
+      setActiveTab('skills');
+      break;
+    case 'mentorships':
+      console.log('Voir les mentorats');
+      // Naviguer vers la page des mentorats
+      break;
+    case 'engagement':
+      console.log('Voir les statistiques détaillées');
+      break;
+    default:
+      break;
+  }
+};
 
+const handleSkillClick = (skill) => {
+  console.log('Détails de la compétence:', skill);
+  // Ouvrir modal avec détails de la compétence
+  alert(`Compétence: ${skill.skill}\nDemande: ${skill.demand}\nOffre: ${skill.supply}`);
+};
 export default DashboardPage;
