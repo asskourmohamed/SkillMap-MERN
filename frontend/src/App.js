@@ -8,6 +8,7 @@ import DiscoveryPage from './pages/DiscoveryPage';
 import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
 import FeedPage from './pages/FeedPage';
+import AdminLayout from './pages/Admin/AdminLayout';
 // Route protégée simple
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('token');
@@ -54,6 +55,11 @@ function App() {
           <Route path="/app/feed" element={
             <ProtectedRoute>
               <FeedPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/app/admin/*" element={
+            <ProtectedRoute>
+              <AdminLayout />
             </ProtectedRoute>
           } />
         </Routes>

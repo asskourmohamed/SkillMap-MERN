@@ -42,6 +42,9 @@ const AppHeader = ({ user }) => {
     }, 100);
   };
 
+  // Vérifier si l'utilisateur est admin
+  const isAdmin = user?.role === 'admin';
+
   return (
     <header className="sticky top-0 z-50 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
@@ -52,37 +55,71 @@ const AppHeader = ({ user }) => {
             className="h-16 w-auto"
           />
         </Link>
+        
         <div className="flex items-center gap-4">
-        <Link
-          to="/app/discovery"
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary transition-colors"
-        >
-          <span className="material-symbols-outlined">search</span>
-          <span className="hidden md:inline"></span>
-        </Link>
-        <Link
-          to="/app/feed"
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary transition-colors"
-        >
-          <span className="material-symbols-outlined">home</span>
-          <span className="hidden md:inline"></span>
-        </Link>
+          <Link
+            to="/app/discovery"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary transition-colors"
+          >
+            <span className="material-symbols-outlined">search</span>
+            <span className="hidden md:inline"></span>
+          </Link>
+          <Link
+            to="/app/feed"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary transition-colors"
+          >
+            <span className="material-symbols-outlined">home</span>
+            <span className="hidden md:inline"></span>
+          </Link>
         </div>
+        
         <div className="flex items-center gap-3">
-          <button className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full">
+          {/* Icône admin - visible seulement pour les admins */}
+          {isAdmin && (
+            <>
+              <Link 
+                to="/app/admin/dashboard"
+                className="relative group"
+                title="Administration"
+              >
+                <button className="p-2 text-amber-600 dark:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-full transition-colors">
+                  <span className="material-symbols-outlined">admin_panel_settings</span>
+                </button>
+                <span className="absolute -top-1 -right-1 w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span>
+              </Link>
+              
+              {/* Badge "Admin" sur l'avatar (optionnel) */}
+              <div className="relative">
+                <span className="absolute -top-1 -right-1 z-10 w-4 h-4 bg-amber-500 rounded-full border-2 border-white dark:border-slate-900 flex items-center justify-center">
+                  <span className="text-[10px] text-white font-bold">A</span>
+                </span>
+              </div>
+            </>
+          )}
+          
+          {/* Notifications - accessible à tous */}
+          <button className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full relative">
             <span className="material-symbols-outlined">notifications</span>
+            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
           </button>
-          <button className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full">
+          
+          {/* Messages - accessible à tous */}
+          <button className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full relative">
             <span className="material-symbols-outlined">chat_bubble</span>
+            <span className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full"></span>
           </button>
           
           {/* Menu déroulant du profil */}
           <div className="relative" ref={dropdownRef}>
             <button 
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex items-center gap-2 focus:outline-none"
+              className="flex items-center gap-2 focus:outline-none group"
             >
-              <div className="w-8 h-8 rounded-full bg-primary/20 overflow-hidden border border-primary/30">
+              <div className={`w-8 h-8 rounded-full overflow-hidden border-2 transition-colors ${
+                isAdmin 
+                  ? 'border-amber-500 group-hover:border-amber-600' 
+                  : 'border-primary/30 group-hover:border-primary'
+              }`}>
                 <img 
                   alt="Profile" 
                   className="w-full h-full object-cover" 
@@ -94,35 +131,71 @@ const AppHeader = ({ user }) => {
               </span>
             </button>
             
-            {/* Dropdown menu - CORRIGÉ: /app/my-profile au lieu d'un ID spécifique */}
+            {/* Dropdown menu */}
             {isDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 py-1 z-50">
+              <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 py-1 z-50">
+                {/* En-tête du dropdown avec rôle */}
+                <div className="px-4 py-2 border-b border-slate-200 dark:border-slate-700">
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                    {user?.name}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {user?.email}
+                  </p>
+                  {isAdmin && (
+                    <div className="mt-1">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                        <span className="material-symbols-outlined text-xs mr-1">admin_panel_settings</span>
+                        Administrateur
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Lien admin dans le dropdown */}
+                {isAdmin && (
+                  <>
+                    <Link 
+                      to="/app/admin/dashboard"
+                      className="flex items-center px-4 py-2 text-sm text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30"
+                      onClick={() => setIsDropdownOpen(false)}
+                    >
+                      <span className="material-symbols-outlined text-sm mr-2">admin_panel_settings</span>
+                      Administration
+                    </Link>
+                    <div className="border-t border-slate-200 dark:border-slate-700 my-1"></div>
+                  </>
+                )}
+                
                 <Link 
                   to="/app/my-profile"
-                  className="block px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                  className="flex items-center px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
                   onClick={() => setIsDropdownOpen(false)}
                 >
-                  <span className="material-symbols-outlined text-sm mr-2 align-middle">person</span>
-                  My Profile
+                  <span className="material-symbols-outlined text-sm mr-2">person</span>
+                  Mon Profil
                 </Link>
+                
                 <Link 
                   to="/app/settings" 
-                  className="block px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                  className="flex items-center px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
                   onClick={() => setIsDropdownOpen(false)}
                 >
-                  <span className="material-symbols-outlined text-sm mr-2 align-middle">settings</span>
-                  Settings
+                  <span className="material-symbols-outlined text-sm mr-2">settings</span>
+                  Paramètres
                 </Link>
+                
                 <hr className="my-1 border-slate-200 dark:border-slate-700" />
+                
                 <button 
                   onClick={() => {
                     setIsDropdownOpen(false);
                     handleLogout();
                   }}
-                  className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-slate-100 dark:hover:bg-slate-700"
+                  className="flex items-center w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-slate-100 dark:hover:bg-slate-700"
                 >
-                  <span className="material-symbols-outlined text-sm mr-2 align-middle">logout</span>
-                  Logout
+                  <span className="material-symbols-outlined text-sm mr-2">logout</span>
+                  Déconnexion
                 </button>
               </div>
             )}

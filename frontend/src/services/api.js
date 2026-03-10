@@ -6,6 +6,7 @@ const API = axios.create({
   timeout: 10000
 });
 
+// Ajouter automatiquement le token dans les requêtes
 API.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -17,13 +18,36 @@ API.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Service d'authentification
+//////////////////////////////
+// AUTH SERVICE
+//////////////////////////////
+
 export const authService = {
   register: (userData) => API.post('/auth/register', userData),
-  login: (credentials) => API.post('/auth/login', credentials),
+
+  login: async (credentials) => {
+    const response = await API.post('/auth/login', credentials);
+
+    if (response.data?.token) {
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+    }
+
+    return response;
+  },
+
   getMe: () => API.get('/auth/me'),
+
+  getCurrentUser: () => {
+    const user = localStorage.getItem('user');
+    return user ? JSON.parse(user) : null;
+  },
+
   updateProfile: (userData) => API.put('/auth/profile', userData),
-  changePassword: (passwords) => API.put('/auth/change-password', passwords),
+
+  changePassword: (passwords) =>
+    API.put('/auth/change-password', passwords),
+
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -31,64 +55,110 @@ export const authService = {
   }
 };
 
-// Service pour les profils (remplace employeeService)
+//////////////////////////////
+// PROFILE SERVICE
+//////////////////////////////
+
 export const profileService = {
   getAll: (params) => API.get('/profiles', { params }),
   getById: (id) => API.get(`/profiles/${id}`),
   search: (query) => API.get(`/profiles/search/${query}`)
 };
 
-// Service pour les compétences
+//////////////////////////////
+// SKILL SERVICE
+//////////////////////////////
+
 export const skillService = {
-  addSkill: (userId, skillData) => API.post(`/profiles/${userId}/skills`, skillData),
-  deleteSkill: (userId, skillId) => API.delete(`/profiles/${userId}/skills/${skillId}`)
+  addSkill: (userId, skillData) =>
+    API.post(`/profiles/${userId}/skills`, skillData),
+
+  deleteSkill: (userId, skillId) =>
+    API.delete(`/profiles/${userId}/skills/${skillId}`)
 };
 
-// Service pour les projets
+//////////////////////////////
+// PROJECT SERVICE
+//////////////////////////////
+
 export const projectService = {
-  addProject: (userId, projectData) => API.post(`/profiles/${userId}/projects`, projectData),
-  deleteProject: (userId, projectId) => API.delete(`/profiles/${userId}/projects/${projectId}`)
+  addProject: (userId, projectData) =>
+    API.post(`/profiles/${userId}/projects`, projectData),
+
+  deleteProject: (userId, projectId) =>
+    API.delete(`/profiles/${userId}/projects/${projectId}`)
 };
 
-// Service pour les expériences
+//////////////////////////////
+// EXPERIENCE SERVICE
+//////////////////////////////
+
 export const experienceService = {
-  addExperience: (userId, expData) => API.post(`/profiles/${userId}/experiences`, expData),
-  deleteExperience: (userId, expId) => API.delete(`/profiles/${userId}/experiences/${expId}`)
+  addExperience: (userId, expData) =>
+    API.post(`/profiles/${userId}/experiences`, expData),
+
+  deleteExperience: (userId, expId) =>
+    API.delete(`/profiles/${userId}/experiences/${expId}`)
 };
-// À la fin du fichier, assure-toi que tout est exporté
+
+//////////////////////////////
+// AUTH API (optionnel)
+//////////////////////////////
+
 export const authAPI = {
   login: (data) => API.post('/auth/login', data),
   register: (data) => API.post('/auth/register', data),
-  getMe: () => API.get('/auth/me'),
+  getMe: () => API.get('/auth/me')
 };
+
+//////////////////////////////
+// USER API
+//////////////////////////////
 
 export const userAPI = {
   getAll: () => API.get('/users'),
   getById: (id) => API.get(`/users/${id}`),
-  update: (id, data) => API.put(`/users/${id}`, data),
+  update: (id, data) => API.put(`/users/${id}`, data)
 };
+
+//////////////////////////////
+// SKILL API
+//////////////////////////////
 
 export const skillAPI = {
   getAll: () => API.get('/skills'),
   getById: (id) => API.get(`/skills/${id}`),
   create: (data) => API.post('/skills', data),
   update: (id, data) => API.put(`/skills/${id}`, data),
-  delete: (id) => API.delete(`/skills/${id}`),
+  delete: (id) => API.delete(`/skills/${id}`)
 };
+
+//////////////////////////////
+// MENTORSHIP API
+//////////////////////////////
 
 export const mentorshipAPI = {
   getMyMentorships: () => API.get('/mentorships/my-mentorships'),
   createRequest: (data) => API.post('/mentorships/request', data),
-  respondToRequest: (id, data) => API.put(`/mentorships/${id}/respond`, data),
+  respondToRequest: (id, data) =>
+    API.put(`/mentorships/${id}/respond`, data)
 };
+
+//////////////////////////////
+// ADMIN API
+//////////////////////////////
 
 export const adminAPI = {
   getUsers: (params) => API.get('/admin/users', { params }),
   createUser: (data) => API.post('/admin/users', data),
   updateUser: (id, data) => API.put(`/admin/users/${id}`, data),
   deleteUser: (id) => API.delete(`/admin/users/${id}`),
-  getStats: () => API.get('/admin/stats'),
-  getSkillTrends: () => API.get('/admin/skill-trends'),
+
+  getDashboardStats: () => API.get('/admin/stats'),
+
+  getSkillGaps: () => API.get('/admin/skill-gaps'),
+
+  getSkillTrends: () => API.get('/admin/skill-trends')
 };
 
 export default API;

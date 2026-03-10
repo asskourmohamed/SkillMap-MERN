@@ -1,7 +1,8 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-exports.protect = async (req, res, next) => {
+// Middleware de protection (authentification)
+const protect = async (req, res, next) => {
   let token;
 
   // Vérifier si le token est dans le header Authorization
@@ -21,7 +22,7 @@ exports.protect = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // Récupérer l'utilisateur
-    const user = await User.findById(decoded.id);
+    const user = await User.findById(decoded.id || decoded.userId);
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -33,6 +34,7 @@ exports.protect = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
+    console.error('Erreur auth:', error.message);
     return res.status(401).json({
       success: false,
       error: 'Non autorisé - Token invalide'
@@ -40,15 +42,48 @@ exports.protect = async (req, res, next) => {
   }
 };
 
-// Middleware pour les routes admin
-exports.authorize = (...roles) => {
+// Middleware pour vérifier les rôles
+const authorize = (...roles) => {
   return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Non autorisé - Utilisateur non connecté'
+      });
+    }
+    
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
-        error: `Role ${req.user.role} non autorisé`
+        error: `Rôle ${req.user.role} non autorisé. Rôles requis: ${roles.join(', ')}`
       });
     }
     next();
   };
+};
+
+// Middleware admin (version simplifiée)
+const adminMiddleware = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ 
+      success: false,
+      error: 'Authentification requise' 
+    });
+  }
+
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ 
+      success: false,
+      error: 'Accès admin requis' 
+    });
+  }
+
+  next();
+};
+
+// Exporter tout correctement
+module.exports = {
+  protect,
+  authorize,
+  adminMiddleware
 };
