@@ -132,7 +132,7 @@ exports.getSkillGaps = async (req, res) => {
 
     // Grouper par titre de compétence
     const skillMap = new Map();
-    
+
     skills.forEach(skill => {
       const key = skill.title;
       if (!skillMap.has(key)) {

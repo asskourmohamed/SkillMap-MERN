@@ -14,7 +14,7 @@ app.use(express.json());
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log(' MongoDB connected'))
-  .catch(err => console.log('MongoDB not connected succesfull', err));
+  .catch(err => console.log('MongoDB not connected', err));
 
 
 app.use('/api/admin', adminRoutes);
