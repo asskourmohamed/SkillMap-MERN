@@ -9,7 +9,8 @@ import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
 import FeedPage from './pages/FeedPage';
 import AdminLayout from './pages/Admin/AdminLayout';
-// Route protégée simple
+
+
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('token');
   const user = localStorage.getItem('user');
