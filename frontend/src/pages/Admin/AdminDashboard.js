@@ -17,7 +17,7 @@ const AdminDashboard = () => {
   const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
-    // Vérifier que l'utilisateur est admin
+    // Vérifier admin or not
     const user = authService.getCurrentUser();
     if (!user || user.role !== 'admin') {
       navigate('/app/feed');
