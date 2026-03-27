@@ -1,7 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const adminRoutes = require('./routes/adminRoutes');
 require('dotenv').config();
 
 const app = express();
@@ -16,8 +15,8 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log(' MongoDB connected'))
   .catch(err => console.log('MongoDB not connected', err));
 
-
-app.use('/api/admin', adminRoutes);
+app.use('/api/auth', require('./routes/auth'));   
+app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/profiles', require('./routes/profileRoutes')); 
 app.use('/api/upload', require('./routes/uploadRoutes'));

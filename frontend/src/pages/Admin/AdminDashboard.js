@@ -25,7 +25,7 @@ const AdminDashboard = () => {
     }
     setCurrentUser(user);
     fetchAdminData();
-  }, []);
+ }, [navigate]);
 
   const fetchAdminData = async () => {
     try {
