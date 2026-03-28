@@ -17,7 +17,6 @@ const AdminDashboard = () => {
   const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
-    // Vérifier admin or not
     const user = authService.getCurrentUser();
     if (!user || user.role !== 'admin') {
       navigate('/app/feed');
@@ -25,37 +24,77 @@ const AdminDashboard = () => {
     }
     setCurrentUser(user);
     fetchAdminData();
- }, [navigate]);
+  }, [navigate]);
+
+  // Fonction pour extraire les top compétences
+  const getTopSkills = (skills) => {
+    if (!skills || !Array.isArray(skills)) {
+      return [];
+    }
+    
+    const skillCount = {};
+    skills.forEach(skill => {
+      const name = skill.title || skill.name;
+      if (name) {
+        skillCount[name] = (skillCount[name] || 0) + 1;
+      }
+    });
+    
+    return Object.entries(skillCount)
+      .map(([name, count]) => ({ _id: name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+  };
 
   const fetchAdminData = async () => {
-    try {
-      setLoading(true);
-      const [statsData, usersData, gapsData] = await Promise.all([
-        adminApi.getDashboardStats(),
-        adminApi.getUsers(),
-        adminApi.getSkillGaps()
-      ]);
-      
-      setStats(statsData.data);
-      setUsers(usersData.data.users);
-      setSkillGaps(gapsData.data);
-    } catch (error) {
-      console.error('Erreur chargement données admin:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    setLoading(true);
+
+    const [dashboardRes, usersRes, skillsRes] = await Promise.all([
+      adminApi.getDashboardStats(),
+      adminApi.getUsers(),
+      adminApi.getSkills(),
+    ]);
+
+    // Dashboard response: { success, data: { stats, recentUsers } }
+    const dashboardData = dashboardRes.data?.data;
+
+    // Users response: { success, data: { users: [...] } } or { success, data: [...] }
+    const usersList = Array.isArray(usersRes.data?.data)
+      ? usersRes.data.data
+      : usersRes.data?.data?.users || [];
+
+    // Skills response: { success, data: [...] }
+    const skillsList = Array.isArray(skillsRes.data?.data)
+      ? skillsRes.data.data
+      : [];
+
+    // Use dashboard stats directly — they're already correct
+    setStats({
+      stats: dashboardData?.stats,
+      recentUsers: dashboardData?.recentUsers || [],
+    });
+
+    setUsers(usersList);
+    setSkillGaps(skillsList);
+
+  } catch (error) {
+    console.error('Erreur chargement données admin:', error);
+    console.error('Détails:', error.response?.data);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleEditUser = (user) => {
     console.log('Éditer utilisateur:', user);
-    // Ouvrir modal d'édition
   };
 
   const handleDeleteUser = async (user) => {
     if (window.confirm(`Voulez-vous vraiment supprimer ${user.name} ?`)) {
       try {
         await adminApi.deleteUser(user._id);
-        await fetchAdminData(); // Recharger les données
+        await fetchAdminData();
       } catch (error) {
         console.error('Erreur suppression:', error);
       }
@@ -66,14 +105,14 @@ const AdminDashboard = () => {
     const newRole = user.role === 'admin' ? 'user' : 'admin';
     if (window.confirm(`Changer le rôle de ${user.name} en ${newRole} ?`)) {
       console.log('Changer rôle:', user._id, newRole);
-      // Implémenter le changement de rôle
     }
   };
 
   const handleSearch = async (searchTerm) => {
     try {
       const data = await adminApi.getUsers(1, searchTerm);
-      setUsers(data.data.users);
+      const usersList = data.data?.users || data.data || [];
+      setUsers(usersList);
     } catch (error) {
       console.error('Erreur recherche:', error);
     }
@@ -145,7 +184,13 @@ const AdminDashboard = () => {
             </div>
           </div>
           
-          <button className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+          <button 
+            onClick={() => {
+              authService.logout();
+              navigate('/');
+            }}
+            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+          >
             <LogOut className="w-4 h-4" />
             <span>Déconnexion</span>
           </button>
@@ -154,7 +199,6 @@ const AdminDashboard = () => {
 
       {/* Main Content */}
       <div className="ml-64">
-        {/* Header */}
         <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-10">
           <div className="px-8 py-4 flex items-center justify-between">
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
@@ -175,52 +219,56 @@ const AdminDashboard = () => {
           </div>
         </header>
 
-        {/* Page Content */}
         <div className="p-8">
-          {activeTab === 'dashboard' && (
+          {activeTab === 'dashboard' && stats && (
             <div className="space-y-6">
               <StatsCards stats={stats} />
               
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Graphiques */}
                 <SkillGapsChart skillGaps={skillGaps} />
                 
-                {/* Activité récente */}
                 <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
                   <h3 className="font-semibold text-slate-900 dark:text-white mb-4">
                     Dernières inscriptions
                   </h3>
                   <div className="space-y-4">
-                    {stats?.recentUsers?.map((user, index) => (
-                      <div key={index} className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                          <span className="text-sm font-medium">{user.name?.charAt(0)}</span>
+                    {stats.recentUsers?.length > 0 ? (
+                      stats.recentUsers.map((user, index) => (
+                        <div key={index} className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                            <span className="text-sm font-medium">{user.name?.charAt(0)}</span>
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{user.name}</p>
+                            <p className="text-xs text-slate-500">{user.email}</p>
+                          </div>
+                          <span className="text-xs text-slate-400">
+                            {new Date(user.createdAt).toLocaleDateString()}
+                          </span>
                         </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">{user.name}</p>
-                          <p className="text-xs text-slate-500">{user.email}</p>
-                        </div>
-                        <span className="text-xs text-slate-400">
-                          {new Date(user.createdAt).toLocaleDateString()}
-                        </span>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      <p className="text-center text-slate-500 py-8">Aucun utilisateur</p>
+                    )}
                   </div>
                 </div>
               </div>
 
-              {/* Top compétences */}
               <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
                 <h3 className="font-semibold text-slate-900 dark:text-white mb-4">
                   Compétences les plus partagées
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                  {stats?.topSkills?.map((skill, index) => (
-                    <div key={index} className="text-center p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                      <p className="font-medium">{skill._id}</p>
-                      <p className="text-sm text-slate-500">{skill.count} utilisateurs</p>
-                    </div>
-                  ))}
+                  {stats.stats?.skills?.topSkills?.length > 0 ? (
+                    stats.stats.skills.topSkills.map((skill, index) => (
+                      <div key={index} className="text-center p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                        <p className="font-medium">{skill._id}</p>
+                        <p className="text-sm text-slate-500">{skill.count} utilisateurs</p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-center text-slate-500 col-span-5 py-4">Aucune compétence</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -242,9 +290,23 @@ const AdminDashboard = () => {
               <h3 className="font-semibold text-slate-900 dark:text-white mb-4">
                 Gestion des compétences
               </h3>
-              <p className="text-slate-600 dark:text-slate-400">
-                Page en construction...
-              </p>
+              <div className="space-y-4">
+                {skillGaps.length > 0 ? (
+                  skillGaps.map((skill, index) => (
+                    <div key={index} className="p-3 bg-slate-50 dark:bg-slate-700/30 rounded-lg">
+                      <div className="flex justify-between">
+                        <span className="font-medium">{skill.title}</span>
+                        <span className="text-sm text-primary">{skill.level}</span>
+                      </div>
+                      <p className="text-sm text-slate-500 mt-1">
+                        {skill.owner?.name} • {skill.owner?.department}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-center text-slate-500 py-8">Aucune compétence trouvée</p>
+                )}
+              </div>
             </div>
           )}
         </div>

@@ -1,94 +1,71 @@
 import React from 'react';
-import { Users, BookOpen, Handshake, TrendingUp, ArrowUp, ArrowDown } from 'lucide-react';
+import { Users, BookOpen, Handshake, TrendingUp } from 'lucide-react';
 
-const StatsCards = ({ stats, onCardClick }) => {
+const StatsCards = ({ stats }) => {
   const cards = [
     {
-      id: 'users',
       title: 'Utilisateurs',
-      value: stats?.users?.total || 0,
-      subValue: `${stats?.users?.new || 0} nouveaux`,
-      change: stats?.users?.growth || 0,
+      value: stats?.stats?.users?.total || 0,
+      change: `+${stats?.stats?.users?.growth || 0}% ce mois`,
       icon: Users,
-      color: 'blue',
-      bgColor: 'bg-blue-50 dark:bg-blue-900/20',
-      textColor: 'text-blue-600 dark:text-blue-400',
-      onClick: () => onCardClick?.('users')
+      color: 'blue'
     },
     {
-      id: 'skills',
       title: 'Compétences',
-      value: stats?.skills?.total || 0,
-      subValue: `${stats?.skills?.topSkills?.length || 0} catégories`,
+      value: stats?.stats?.skills?.total || 0,
+      change: `${stats?.stats?.skills?.topSkills?.length || 0} compétences populaires`,
       icon: BookOpen,
-      color: 'green',
-      bgColor: 'bg-green-50 dark:bg-green-900/20',
-      textColor: 'text-green-600 dark:text-green-400',
-      onClick: () => onCardClick?.('skills')
+      color: 'green'
     },
     {
-      id: 'mentorships',
       title: 'Mentorats actifs',
-      value: stats?.mentorships?.active || 0,
-      subValue: `${stats?.mentorships?.pending || 0} en attente`,
+      value: stats?.stats?.mentorships?.active || 0,
+      change: `${stats?.stats?.mentorships?.total || 0} au total`,
       icon: Handshake,
-      color: 'purple',
-      bgColor: 'bg-purple-50 dark:bg-purple-900/20',
-      textColor: 'text-purple-600 dark:text-purple-400',
-      onClick: () => onCardClick?.('mentorships')
+      color: 'purple'
     },
     {
-      id: 'engagement',
       title: "Taux d'engagement",
-      value: `${stats?.mentorships?.engagementRate || 0}%`,
-      subValue: `${stats?.mentorships?.total || 0} mentorats total`,
+      value: `${stats?.stats?.mentorships?.engagementRate || 0}%`,
+      change: 'des utilisateurs actifs',
       icon: TrendingUp,
-      color: 'amber',
-      bgColor: 'bg-amber-50 dark:bg-amber-900/20',
-      textColor: 'text-amber-600 dark:text-amber-400',
-      onClick: () => onCardClick?.('engagement')
+      color: 'amber'
     }
   ];
+
+  const colorClasses = {
+    blue: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400',
+    green: 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400',
+    purple: 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
+    amber: 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400'
+  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {cards.map((card, index) => {
         const Icon = card.icon;
-        const isPositive = card.change >= 0;
-        
         return (
-          <button
+          <div
             key={index}
-            onClick={card.onClick}
-            className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 hover:shadow-md transition-all hover:scale-105 text-left w-full cursor-pointer group"
+            className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 hover:shadow-md transition-shadow"
           >
             <div className="flex items-start justify-between">
-              <div className="flex-1">
+              <div>
                 <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
                   {card.title}
                 </p>
-                <div className="flex items-baseline gap-2 mt-2">
-                  <p className="text-2xl font-bold text-slate-900 dark:text-white">
-                    {card.value}
-                  </p>
-                  {card.change !== undefined && (
-                    <span className={`text-xs font-medium flex items-center ${
-                      isPositive ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {isPositive ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
-                      {Math.abs(card.change)}%
-                    </span>
-                  )}
-                </div>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white mt-2">
+                  {card.value}
+                </p>
                 <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
-                  {card.subValue}
+                  {card.change}
                 </p>
               </div>
-              <div className={`${card.bgColor} p-3 rounded-lg transition-colors group-hover:scale-110`}>
-                <Icon className={`w-6 h-6 ${card.textColor}`} />
+              <div className={`${colorClasses[card.color]} p-3 rounded-lg`}>
+                <Icon className="w-5 h-5" />
               </div>
             </div>
-          </button>
+          </div>
         );
       })}
     </div>
