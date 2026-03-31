@@ -15,6 +15,7 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log(' MongoDB connected'))
   .catch(err => console.log('MongoDB not connected', err));
 
+
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/profiles', require('./routes/profileRoutes')); 
