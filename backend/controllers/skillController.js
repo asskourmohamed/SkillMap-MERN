@@ -45,7 +45,7 @@ exports.createSkill = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Erreur création compétence:', error);
+    console.error(' Erreur création compétence:', error);
     res.status(500).json({ 
       success: false,
       error: 'Erreur serveur' 
@@ -68,7 +68,7 @@ exports.getAllSkills = async (req, res) => {
       skills
     });
   } catch (error) {
-    console.error('❌ Erreur récupération compétences:', error);
+    console.error(' Erreur récupération compétences:', error);
     res.status(500).json({ 
       success: false,
       error: 'Erreur serveur' 
@@ -100,7 +100,7 @@ exports.getSkillById = async (req, res) => {
       skill
     });
   } catch (error) {
-    console.error('❌ Erreur récupération compétence:', error);
+    console.error(' Erreur récupération compétence:', error);
     res.status(500).json({ 
       success: false,
       error: 'Erreur serveur' 
@@ -149,7 +149,7 @@ exports.updateSkill = async (req, res) => {
       skill
     });
   } catch (error) {
-    console.error('❌ Erreur mise à jour compétence:', error);
+    console.error(' Erreur mise à jour compétence:', error);
     res.status(500).json({ 
       success: false,
       error: 'Erreur serveur' 
@@ -191,7 +191,7 @@ exports.deleteSkill = async (req, res) => {
       message: 'Compétence supprimée avec succès'
     });
   } catch (error) {
-    console.error('❌ Erreur suppression compétence:', error);
+    console.error(' Erreur suppression compétence:', error);
     res.status(500).json({ 
       success: false,
       error: 'Erreur serveur' 
@@ -214,7 +214,7 @@ exports.getUserSkills = async (req, res) => {
       skills
     });
   } catch (error) {
-    console.error('❌ Erreur récupération compétences utilisateur:', error);
+    console.error(' Erreur récupération compétences utilisateur:', error);
     res.status(500).json({ 
       success: false,
       error: 'Erreur serveur' 
@@ -246,7 +246,7 @@ exports.searchSkills = async (req, res) => {
       skills
     });
   } catch (error) {
-    console.error('❌ Erreur recherche compétences:', error);
+    console.error(' Erreur recherche compétences:', error);
     res.status(500).json({ 
       success: false,
       error: 'Erreur serveur' 

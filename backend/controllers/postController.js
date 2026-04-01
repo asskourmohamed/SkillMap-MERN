@@ -6,7 +6,7 @@ const { uploadPostMedia, cloudinary } = require('../config/cloudinary');
 exports.createPost = (req, res) => {
   uploadPostMedia(req, res, async (err) => {
     if (err) {
-      console.error('❌ Erreur upload média:', err);
+      console.error(' Erreur upload média:', err);
       return res.status(400).json({
         success: false,
         error: err.message || 'Erreur lors de l\'upload des médias'
@@ -44,7 +44,7 @@ exports.createPost = (req, res) => {
         data: post
       });
     } catch (error) {
-      console.error('❌ Erreur création post:', error);
+      console.error(' Erreur création post:', error);
       res.status(500).json({
         success: false,
         error: 'Erreur lors de la création du post'
@@ -80,7 +80,7 @@ exports.getFeed = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('❌ Erreur récupération feed:', error);
+    console.error(' Erreur récupération feed:', error);
     res.status(500).json({
       success: false,
       error: 'Erreur lors de la récupération des posts'
@@ -116,7 +116,7 @@ exports.getUserPosts = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('❌ Erreur récupération posts utilisateur:', error);
+    console.error(' Erreur récupération posts utilisateur:', error);
     res.status(500).json({
       success: false,
       error: 'Erreur lors de la récupération des posts'
@@ -156,7 +156,7 @@ exports.toggleLike = async (req, res) => {
       isLiked: likeIndex === -1
     });
   } catch (error) {
-    console.error('❌ Erreur like:', error);
+    console.error(' Erreur like:', error);
     res.status(500).json({
       success: false,
       error: 'Erreur lors du like'
@@ -200,7 +200,7 @@ exports.addComment = async (req, res) => {
       data: post.comments[post.comments.length - 1]
     });
   } catch (error) {
-    console.error('❌ Erreur commentaire:', error);
+    console.error(' Erreur commentaire:', error);
     res.status(500).json({
       success: false,
       error: 'Erreur lors de l\'ajout du commentaire'
@@ -244,7 +244,7 @@ exports.deletePost = async (req, res) => {
       message: 'Post supprimé avec succès'
     });
   } catch (error) {
-    console.error('❌ Erreur suppression post:', error);
+    console.error(' Erreur suppression post:', error);
     res.status(500).json({
       success: false,
       error: 'Erreur lors de la suppression du post'

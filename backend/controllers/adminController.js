@@ -20,7 +20,7 @@ exports.getUsers = async (req, res) => {
       data: users
     });
   } catch (error) {
-    console.error('❌ Erreur liste users:', error);
+    console.error(' Erreur liste users:', error);
     res.status(500).json({ 
       success: false, 
       error: error.message 
@@ -47,7 +47,7 @@ exports.getUserById = async (req, res) => {
     
     res.json({ success: true, data: user });
   } catch (error) {
-    console.error('❌ Erreur get user:', error);
+    console.error(' Erreur get user:', error);
     res.status(500).json({ 
       success: false, 
       error: error.message 
@@ -102,7 +102,7 @@ exports.createUser = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Erreur création utilisateur:', error);
+    console.error(' Erreur création utilisateur:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -157,7 +157,7 @@ exports.updateUser = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Erreur modification utilisateur:', error);
+    console.error(' Erreur modification utilisateur:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -196,7 +196,7 @@ exports.deleteUser = async (req, res) => {
       message: `Utilisateur ${user.name} supprimé avec succès`
     });
   } catch (error) {
-    console.error('❌ Erreur delete user:', error);
+    console.error(' Erreur delete user:', error);
     res.status(500).json({ 
       success: false, 
       error: error.message 
@@ -249,7 +249,7 @@ exports.getSkills = async (req, res) => {
     });
     
   } catch (error) {
-    console.error('❌ Erreur:', error);
+    console.error(' Erreur:', error);
     res.status(500).json({ 
       success: false, 
       error: error.message 
@@ -337,7 +337,7 @@ exports.getDashboardStats = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Erreur dashboard:', error);
+    console.error(' Erreur dashboard:', error);
     res.status(500).json({ 
       success: false, 
       error: error.message 
