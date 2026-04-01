@@ -1,10 +1,8 @@
 const express = require('express');
 const router = express.Router();
 
-// Importer les middlewares
 const { protect, adminMiddleware } = require('../middleware/auth');
 
-// Importer le contrôleur
 const adminController = require('../controllers/adminController');
 
 // ============================================
