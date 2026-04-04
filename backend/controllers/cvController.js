@@ -6,7 +6,7 @@ const PDFDocument = require('pdfkit');
 exports.uploadCV = (req, res) => {
   uploadCV(req, res, async (err) => {
     if (err) {
-      console.error('❌ Erreur upload CV:', err);
+      console.error(' Erreur upload CV:', err);
       return res.status(400).json({
         success: false,
         error: err.message || 'Erreur lors de l\'upload du CV'
@@ -45,7 +45,7 @@ exports.uploadCV = (req, res) => {
         data: user.cv
       });
     } catch (error) {
-      console.error('❌ Erreur mise à jour:', error);
+      console.error(' Erreur mise à jour:', error);
       res.status(500).json({
         success: false,
         error: 'Erreur lors de la mise à jour du profil'
@@ -81,7 +81,7 @@ exports.deleteCV = async (req, res) => {
       message: 'CV supprimé avec succès'
     });
   } catch (error) {
-    console.error('❌ Erreur suppression CV:', error);
+    console.error(' Erreur suppression CV:', error);
     res.status(500).json({
       success: false,
       error: 'Erreur lors de la suppression du CV'
@@ -172,7 +172,7 @@ exports.generateProfilePDF = async (req, res) => {
     doc.end();
 
   } catch (error) {
-    console.error('❌ Erreur génération PDF:', error);
+    console.error(' Erreur génération PDF:', error);
     res.status(500).json({
       success: false,
       error: 'Erreur lors de la génération du PDF'
