@@ -53,7 +53,7 @@ exports.uploadProfilePicture = (req, res) => {
 exports.uploadCoverPicture = (req, res) => {
   uploadCoverPicture(req, res, async (err) => {
     if (err) {
-      console.error('❌ Erreur upload:', err);
+      console.error(' Erreur upload:', err);
       return res.status(400).json({
         success: false,
         error: err.message || 'Erreur lors de l\'upload'
@@ -86,7 +86,7 @@ exports.uploadCoverPicture = (req, res) => {
         }
       });
     } catch (error) {
-      console.error('❌ Erreur mise à jour:', error);
+      console.error(' Erreur mise à jour:', error);
       res.status(500).json({
         success: false,
         error: 'Erreur lors de la mise à jour du profil'
