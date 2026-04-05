@@ -16,7 +16,6 @@ const LoginPage = () => {
     setError('');
     setLoading(true);
 
-    console.log('═══════════════════════════════════════');
     console.log(' TENTATIVE DE CONNEXION');
     console.log(' Email saisi:', email);
     console.log(' Password saisi:', password);
@@ -33,14 +32,14 @@ const LoginPage = () => {
         headers: { 'Content-Type': 'application/json' }
       });
 
-      console.log('✅ Réponse du serveur:', response.data);
+      console.log(' Réponse du serveur:', response.data);
 
       if (response.data.success) {
         // Sauvegarder les nouvelles données
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.data));
         
-        console.log('✅ Nouvel utilisateur connecté:', response.data.data.email);
+        console.log(' Nouvel utilisateur connecté:', response.data.data.email);
         
         // Rediriger vers Discovery
         navigate('/app/feed');
