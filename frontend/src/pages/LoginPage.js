@@ -47,7 +47,7 @@ const LoginPage = () => {
         setError(response.data.error || 'Erreur de connexion');
       }
     } catch (error) {
-      console.error('❌ Erreur de connexion:', error);
+      console.error(' Erreur de connexion:', error);
       
       if (error.response) {
         setError(error.response.data.error || `Erreur ${error.response.status}`);
