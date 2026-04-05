@@ -17,9 +17,9 @@ const LoginPage = () => {
     setLoading(true);
 
     console.log('═══════════════════════════════════════');
-    console.log('🔐 TENTATIVE DE CONNEXION');
-    console.log('📧 Email saisi:', email);
-    console.log('🔑 Password saisi:', password);
+    console.log(' TENTATIVE DE CONNEXION');
+    console.log(' Email saisi:', email);
+    console.log(' Password saisi:', password);
 
     try {
       // Nettoyer les anciennes données avant de se connecter
