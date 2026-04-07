@@ -21,7 +21,6 @@ const LoginPage = () => {
     console.log(' Password saisi:', password);
 
     try {
-      // Nettoyer les anciennes données avant de se connecter
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       
@@ -35,13 +34,11 @@ const LoginPage = () => {
       console.log(' Réponse du serveur:', response.data);
 
       if (response.data.success) {
-        // Sauvegarder les nouvelles données
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.data));
         
         console.log(' Nouvel utilisateur connecté:', response.data.data.email);
-        
-        // Rediriger vers Discovery
+
         navigate('/app/feed');
       } else {
         setError(response.data.error || 'Erreur de connexion');
@@ -94,14 +91,12 @@ const LoginPage = () => {
 
       <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-6 sm:p-12 lg:p-24 bg-background-light dark:bg-background-dark">
         <div className="w-full max-w-md">
-          {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-2 mb-8 justify-center">
             <span className="material-symbols-outlined text-primary text-4xl">hub</span>
             <span className="text-2xl font-bold dark:text-white">ProNetwork</span>
           </div>
 
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-            {/* Tab Navigation */}
             <div className="flex border-b border-slate-100 dark:border-slate-700">
               <button className="flex-1 py-4 text-sm font-semibold text-primary border-b-2 border-primary">
                 Sign In
@@ -232,7 +227,6 @@ const LoginPage = () => {
             </div>
           </div>
 
-          {/* Global Footer Links */}
           <div className="mt-8 flex justify-center gap-6 text-sm font-medium text-slate-500 dark:text-slate-400">
             <a className="hover:text-primary transition-colors" href="#">Help Center</a>
             <a className="hover:text-primary transition-colors" href="#">About Us</a>
