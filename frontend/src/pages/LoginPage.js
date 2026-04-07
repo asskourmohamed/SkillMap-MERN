@@ -63,7 +63,6 @@ const LoginPage = () => {
 
   return (
     <div className="flex min-h-screen">
-      {/* Left Side: Visual Anchor */}
           <div
             className="hidden lg:flex lg:w-1/2 relative bg-cover bg-center"
             style={{ backgroundImage: `url(${handshake})` }}
@@ -92,7 +91,7 @@ const LoginPage = () => {
         </div>
       </div>
 
-      {/* Right Side: Auth Form */}
+
       <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-6 sm:p-12 lg:p-24 bg-background-light dark:bg-background-dark">
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
