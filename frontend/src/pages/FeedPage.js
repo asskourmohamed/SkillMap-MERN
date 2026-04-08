@@ -50,7 +50,6 @@ const FeedPage = () => {
     }
   };
 
-  // Observer pour l'infinite scroll
   const lastPostRef = useCallback(node => {
     if (loading || loadingMore) return;
     if (observerRef.current) observerRef.current.disconnect();
@@ -69,7 +68,7 @@ const FeedPage = () => {
   };
 
   const handlePostUpdated = () => {
-    fetchFeed(1); // Recharger le feed
+    fetchFeed(1); 
   };
 
   if (loading) {
@@ -88,7 +87,6 @@ const FeedPage = () => {
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-6">Actualité</h1>
         
-        {/* Créateur de post */}
         <PostCreator 
           user={currentUser} 
           onPostCreated={handlePostCreated}
