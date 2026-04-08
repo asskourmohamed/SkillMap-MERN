@@ -94,7 +94,6 @@ const FeedPage = () => {
           onPostCreated={handlePostCreated}
         />
 
-        {/* Liste des posts */}
         <div className="space-y-4">
           {posts.map((post, index) => (
             <div
@@ -110,14 +109,12 @@ const FeedPage = () => {
           ))}
         </div>
 
-        {/* Loading more indicator */}
         {loadingMore && (
           <div className="flex justify-center py-4">
             <LoadingSpinner size="medium" />
           </div>
         )}
 
-        {/* No posts */}
         {posts.length === 0 && !loading && (
           <div className="text-center py-12">
             <span className="material-symbols-outlined text-6xl text-slate-300 mb-4">newspaper</span>
