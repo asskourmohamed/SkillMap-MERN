@@ -6,21 +6,28 @@ require('dotenv').config();
 const app = express();
 
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
   credentials: true
 }));
 app.use(express.json());
 
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log(' MongoDB connected'))
-  .catch(err => console.log('MongoDB not connected', err));
-
+// Only connect if not already connected (prevents double-connect in tests)
+if (mongoose.connection.readyState === 0) {
+  mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log(' MongoDB connected'))
+    .catch(err => console.log('MongoDB not connected', err));
+}
 
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/auth', require('./routes/authRoutes'));
-app.use('/api/profiles', require('./routes/profileRoutes')); 
+app.use('/api/profiles', require('./routes/profileRoutes'));
 app.use('/api/upload', require('./routes/uploadRoutes'));
 app.use('/api/cv', require('./routes/cvRoutes'));
 app.use('/api/posts', require('./routes/postRoutes'));
+
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
+if (require.main === module) {
+  app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
+}
+
+module.exports = app;
