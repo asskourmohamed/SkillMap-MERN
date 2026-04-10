@@ -80,7 +80,7 @@ describe('LoginPage', () => {
 
   it('shows loading text while submitting', () => {
     renderLogin();
-    // Fill form
+    // Fill form now to trigger submit (axios is mocked to hang, so loading state should persist)
     fireEvent.change(screen.getByLabelText(/email address/i), {
       target: { value: 'test@example.com' }
     });
