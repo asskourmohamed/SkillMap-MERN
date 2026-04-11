@@ -1,6 +1,11 @@
 import { render, act } from '@testing-library/react';
-import { AuthProvider, AuthContext } from '../context/AuthContext';
 import { useContext } from 'react';
+import { AuthProvider, AuthContext } from '../context/AuthContext';
+
+// localStorage is available in jsdom 
+beforeEach(() => {
+  localStorage.clear();
+});
 
 const TestConsumer = ({ onValue }) => {
   const ctx = useContext(AuthContext);
@@ -19,7 +24,7 @@ describe('AuthContext', () => {
     expect(value.user).toBeNull();
   });
 
-  it('sets user after login', async () => {
+  it('sets user after login', () => {
     let value;
     render(
       <AuthProvider>
@@ -27,9 +32,10 @@ describe('AuthContext', () => {
       </AuthProvider>
     );
     act(() => {
-      value.login({ name: 'Mohamed' }, 'fake-jwt-token');
+      value.login({ name: 'Mohamed', email: 'test@test.com' }, 'fake-jwt');
     });
-    expect(value.user).toEqual({ name: 'Mohamed' });
+    expect(value.user).toEqual({ name: 'Mohamed', email: 'test@test.com' });
+    expect(localStorage.getItem('token')).toBe('fake-jwt');
   });
 
   it('clears user after logout', () => {
@@ -39,7 +45,24 @@ describe('AuthContext', () => {
         <TestConsumer onValue={v => { value = v; }} />
       </AuthProvider>
     );
-    act(() => value.logout());
+    act(() => {
+      value.login({ name: 'Mohamed' }, 'fake-jwt');
+    });
+    act(() => {
+      value.logout();
+    });
     expect(value.user).toBeNull();
+    expect(localStorage.getItem('token')).toBeNull();
+  });
+
+  it('restores user from localStorage on mount', () => {
+    localStorage.setItem('user', JSON.stringify({ name: 'Restored User' }));
+    let value;
+    render(
+      <AuthProvider>
+        <TestConsumer onValue={v => { value = v; }} />
+      </AuthProvider>
+    );
+    expect(value.user).toEqual({ name: 'Restored User' });
   });
 });
