@@ -32,7 +32,7 @@ const renderLogin = () => render(
   <MemoryRouter><LoginPage /></MemoryRouter>
 );
 
-// Target submit button specifically by type, not by name (two "Sign In" buttons exist)
+// Target submit button specifically by type
 const getSubmitButton = () =>
   screen.getByRole('button', { name: /signing in|sign in/i, hidden: false },)
   ?? screen.getAllByRole('button').find(b => b.type === 'submit');
