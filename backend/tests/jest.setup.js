@@ -1,2 +1,4 @@
-process.env.MONGOMS_DOWNLOAD_URL = 'https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-debian12-7.0.14.tgz';
-process.env.MONGOMS_VERSION = '7.0.14';
+// Point tests at the real mongo container when running in CI
+if (process.env.CI) {
+  process.env.MONGO_URI = 'mongodb://skillmap-mongo:27017/skillmap-test';
+}

@@ -2,6 +2,7 @@ pipeline {
   agent any
 
   environment {
+    CI='true'
     DOCKER_REGISTRY = "asskourmohamed"
     IMAGE_BACKEND = "${DOCKER_REGISTRY}/skillmap-backend"
     IMAGE_FRONTEND = "${DOCKER_REGISTRY}/skillmap-frontend"
