@@ -17,23 +17,37 @@ beforeAll(async () => {
     mongoose.connection.once('connected', resolve);
   });
 
+  // Clean up any leftover data from previous runs
+  const collections = mongoose.connection.collections;
+  for (const key in collections) {
+    await collections[key].deleteMany({});
+  }
+
   const res = await request(app).post('/api/auth/register').send({
     name: 'Post User',
     email: 'post@example.com',
     password: 'password123'
   });
+
+  if (!res.body.token) {
+    throw new Error(`Register failed in post.test.js: ${JSON.stringify(res.body)}`);
+  }
+
   token = res.body.token;
 }, 30000);
 
 afterAll(async () => {
-  await mongoose.connection.dropDatabase();
+  const collections = mongoose.connection.collections;
+  for (const key in collections) {
+    await collections[key].deleteMany({});
+  }
   await mongoose.disconnect();
 });
 
 afterEach(async () => {
-  const collections = mongoose.connection.collections;
-  for (const key in collections) {
-    await collections[key].deleteMany({});
+  // Only clear posts between tests, keep the user
+  if (mongoose.connection.collections['posts']) {
+    await mongoose.connection.collections['posts'].deleteMany({});
   }
 });
 

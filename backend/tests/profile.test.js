@@ -18,17 +18,31 @@ beforeAll(async () => {
     mongoose.connection.once('connected', resolve);
   });
 
+  // Clean up any leftover data from previous runs
+  const collections = mongoose.connection.collections;
+  for (const key in collections) {
+    await collections[key].deleteMany({});
+  }
+
   const res = await request(app).post('/api/auth/register').send({
     name: 'Profile User',
     email: 'profile@example.com',
     password: 'password123'
   });
+
+  if (!res.body.token) {
+    throw new Error(`Register failed in profile.test.js: ${JSON.stringify(res.body)}`);
+  }
+
   token = res.body.token;
   userId = res.body.data._id;
 }, 30000);
 
 afterAll(async () => {
-  await mongoose.connection.dropDatabase();
+  const collections = mongoose.connection.collections;
+  for (const key in collections) {
+    await collections[key].deleteMany({});
+  }
   await mongoose.disconnect();
 });
 
