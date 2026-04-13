@@ -9,7 +9,7 @@ jest.mock('../services/api', () => ({
   }
 }));
 
-import AppHeader from '../components/layout/AppHeader';
+import AppHeader from '../components/Layout/AppHeader';
 
 const mockUser = { name: 'Mohamed', email: 'test@test.com', role: 'user' };
 const mockAdmin = { name: 'Admin', email: 'admin@test.com', role: 'admin' };
