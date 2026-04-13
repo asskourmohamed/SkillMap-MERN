@@ -1,20 +1,18 @@
 const request = require('supertest');
 const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
 
 let app;
-let mongoServer;
 
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  await mongoose.disconnect();
-  await mongoose.connect(mongoServer.getUri());
+  await mongoose.connect(
+    process.env.MONGO_URI || 'mongodb://localhost:27017/skillmap-test'
+  );
   app = require('../server');
-});
+}, 30000);
 
 afterAll(async () => {
+  await mongoose.connection.dropDatabase();
   await mongoose.disconnect();
-  await mongoServer.stop();
 });
 
 afterEach(async () => {
@@ -34,7 +32,7 @@ describe('POST /api/auth/register', () => {
     expect(res.statusCode).toBe(201);
     expect(res.body.success).toBe(true);
     expect(res.body).toHaveProperty('token');
-    expect(res.body.data).toHaveProperty('_id');      // ← res.body.data, not res.body
+    expect(res.body.data).toHaveProperty('_id');
   });
 
   it('should reject duplicate email', async () => {
@@ -70,7 +68,6 @@ describe('POST /api/auth/login', () => {
     expect(res.statusCode).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body).toHaveProperty('token');
-    expect(res.body.data).toHaveProperty('_id');      // ← login also returns data
   });
 
   it('should reject wrong password', async () => {

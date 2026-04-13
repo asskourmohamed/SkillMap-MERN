@@ -1,15 +1,13 @@
 const request = require('supertest');
 const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
 
 let app;
-let mongoServer;
 let token;
 
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  await mongoose.disconnect();
-  await mongoose.connect(mongoServer.getUri());
+  await mongoose.connect(
+    process.env.MONGO_URI || 'mongodb://localhost:27017/skillmap-test'
+  );
   app = require('../server');
 
   const res = await request(app).post('/api/auth/register').send({
@@ -18,11 +16,18 @@ beforeAll(async () => {
     password: 'password123'
   });
   token = res.body.token;
-});
+}, 30000);
 
 afterAll(async () => {
+  await mongoose.connection.dropDatabase();
   await mongoose.disconnect();
-  await mongoServer.stop();
+});
+
+afterEach(async () => {
+  const collections = mongoose.connection.collections;
+  for (const key in collections) {
+    await collections[key].deleteMany({});
+  }
 });
 
 describe('POST /api/posts', () => {
@@ -32,7 +37,6 @@ describe('POST /api/posts', () => {
       .set('Authorization', `Bearer ${token}`)
       .send({ content: 'Hello world from test' });
     expect(res.statusCode).toBe(201);
-    // Your API wraps responses: { success: true, data: { _id, ... } }
     expect(res.body.success).toBe(true);
     expect(res.body.data).toHaveProperty('_id');
   });
@@ -48,7 +52,7 @@ describe('POST /api/posts', () => {
 describe('GET /api/posts/feed', () => {
   it('should return feed posts', async () => {
     const res = await request(app)
-      .get('/api/posts/feed')               // ← was /api/posts, correct is /api/posts/feed
+      .get('/api/posts/feed')
       .set('Authorization', `Bearer ${token}`);
     expect(res.statusCode).toBe(200);
     expect(res.body.success).toBe(true);

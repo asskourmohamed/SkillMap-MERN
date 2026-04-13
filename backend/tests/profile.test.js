@@ -1,16 +1,14 @@
 const request = require('supertest');
 const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
 
 let app;
-let mongoServer;
 let token;
 let userId;
 
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  await mongoose.disconnect();
-  await mongoose.connect(mongoServer.getUri());
+  await mongoose.connect(
+    process.env.MONGO_URI || 'mongodb://localhost:27017/skillmap-test'
+  );
   app = require('../server');
 
   const res = await request(app).post('/api/auth/register').send({
@@ -19,12 +17,12 @@ beforeAll(async () => {
     password: 'password123'
   });
   token = res.body.token;
-  userId = res.body.data._id;   // ← correct: { success, token, data: { _id, ... } }
-});
+  userId = res.body.data._id;
+}, 30000);
 
 afterAll(async () => {
+  await mongoose.connection.dropDatabase();
   await mongoose.disconnect();
-  await mongoServer.stop();
 });
 
 describe('GET /api/profiles', () => {
