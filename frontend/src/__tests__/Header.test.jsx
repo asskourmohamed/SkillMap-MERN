@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import Header from '../components/layout/Header';
+import Header from '../components/Layout/Header';
 
 describe('Header (public)', () => {
   it('renders without crashing', () => {
