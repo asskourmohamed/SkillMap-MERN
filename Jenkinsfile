@@ -41,7 +41,9 @@ pipeline {
       parallel {
         stage('Backend Tests') {
           steps {
-            dir('backend') { sh 'npm test -- --watchAll=false --coverage' }
+            dir('backend') {
+              sh 'MONGO_URI=mongodb://skillmap-mongo:27017/skillmap-test npm test -- --watchAll=false --coverage'
+            }
           }
         }
         stage('Frontend Tests') {
