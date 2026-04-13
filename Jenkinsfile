@@ -42,7 +42,7 @@ pipeline {
         stage('Backend Tests') {
           steps {
             dir('backend') {
-              sh 'MONGO_URI=mongodb://skillmap-mongo:27017/skillmap-test npm test -- --watchAll=false --coverage'
+              sh 'MONGO_URI=mongodb://skillmap-mongo:27017/skillmap-test JWT_SECRET=test_secret_for_ci npm test -- --watchAll=false --coverage'
             }
           }
         }

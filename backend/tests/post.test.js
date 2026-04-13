@@ -1,14 +1,21 @@
 const request = require('supertest');
 const mongoose = require('mongoose');
 
-let app;
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'test_secret_for_ci';
+process.env.MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/skillmap-test';
+
+const app = require('../server');
+
 let token;
 
 beforeAll(async () => {
-  await mongoose.connect(
-    process.env.MONGO_URI || 'mongodb://localhost:27017/skillmap-test'
-  );
-  app = require('../server');
+  if (mongoose.connection.readyState === 0) {
+    await mongoose.connect(process.env.MONGO_URI);
+  }
+  await new Promise((resolve) => {
+    if (mongoose.connection.readyState === 1) return resolve();
+    mongoose.connection.once('connected', resolve);
+  });
 
   const res = await request(app).post('/api/auth/register').send({
     name: 'Post User',

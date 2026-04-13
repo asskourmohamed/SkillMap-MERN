@@ -1,13 +1,22 @@
 const request = require('supertest');
 const mongoose = require('mongoose');
 
-let app;
+// Must require app AFTER env is set
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'test_secret_for_ci';
+process.env.MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/skillmap-test';
+
+const app = require('../server');
 
 beforeAll(async () => {
-  await mongoose.connect(
-    process.env.MONGO_URI || 'mongodb://localhost:27017/skillmap-test'
-  );
-  app = require('../server');
+  // Wait for mongoose to be connected
+  if (mongoose.connection.readyState === 0) {
+    await mongoose.connect(process.env.MONGO_URI);
+  }
+  // Wait until connected
+  await new Promise((resolve) => {
+    if (mongoose.connection.readyState === 1) return resolve();
+    mongoose.connection.once('connected', resolve);
+  });
 }, 30000);
 
 afterAll(async () => {
