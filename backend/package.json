@@ -9,10 +9,6 @@
     "test": "jest --coverage",
     "create-admin": "node scripts/create-admin.js"
   },
-  "jest": {
-    "testEnvironment": "node",
-    "coverageDirectory": "coverage"
-  },
   "keywords": [],
   "author": "",
   "license": "ISC",
