@@ -2,11 +2,14 @@ pipeline {
   agent any
 
   environment {
-    CI='true'
+    CI = 'true'
     DOCKER_REGISTRY = "asskourmohamed"
     IMAGE_BACKEND = "${DOCKER_REGISTRY}/skillmap-backend"
     IMAGE_FRONTEND = "${DOCKER_REGISTRY}/skillmap-frontend"
     SONAR_TOKEN = credentials('sonarqube-token')
+    // Test environment variables
+    MONGO_URI_TEST = "mongodb://skillmap-mongo:27017/skillmap-test"
+    JWT_SECRET_TEST = "test_secret_for_ci"
   }
 
   tools {
@@ -42,13 +45,25 @@ pipeline {
         stage('Backend Tests') {
           steps {
             dir('backend') {
-              sh 'MONGO_URI=mongodb://skillmap-mongo:27017/skillmap-test JWT_SECRET=test_secret_for_ci npm test -- --watchAll=false --coverage'
+              sh '''
+                MONGO_URI=${MONGO_URI_TEST} \
+                JWT_SECRET=${JWT_SECRET_TEST} \
+                PORT=5001 \
+                JWT_EXPIRE=7d \
+                CORS_ORIGIN=http://localhost:3000 \
+                npm test -- --watchAll=false --coverage
+              '''
             }
           }
         }
         stage('Frontend Tests') {
           steps {
-            dir('frontend') { sh 'npm test -- --watchAll=false --coverage' }
+            dir('frontend') {
+              sh '
+              MONGO_URI=${MONGO_URI_TEST} \
+              JWT_SECRET=${JWT_SECRET_TEST} \
+              npm test -- --watchAll=false --coverage' 
+              }
           }
         }
       }
