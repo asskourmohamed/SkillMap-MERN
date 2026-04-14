@@ -59,10 +59,7 @@ pipeline {
         stage('Frontend Tests') {
           steps {
             dir('frontend') {
-              sh '
-              MONGO_URI=${MONGO_URI_TEST} \
-              JWT_SECRET=${JWT_SECRET_TEST} \
-              npm test -- --watchAll=false --coverage' 
+              sh 'npm test -- --watchAll=false --coverage' 
               }
           }
         }
