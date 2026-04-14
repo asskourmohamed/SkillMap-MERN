@@ -7,14 +7,12 @@ pipeline {
     IMAGE_BACKEND = "${DOCKER_REGISTRY}/skillmap-backend"
     IMAGE_FRONTEND = "${DOCKER_REGISTRY}/skillmap-frontend"
     SONAR_TOKEN = credentials('sonarqube-token')
-    // Test environment variables
     MONGO_URI_TEST = "mongodb://skillmap-mongo:27017/skillmap-test"
     JWT_SECRET_TEST = "test_secret_for_ci"
   }
 
   tools {
     nodejs 'NodeJS-18'
-    sonarQubeScannerInstallation 'SonarScanner'
   }
 
   stages {
@@ -51,7 +49,6 @@ pipeline {
                 JWT_SECRET=${JWT_SECRET_TEST} \
                 PORT=5001 \
                 JWT_EXPIRE=7d \
-                CORS_ORIGIN=http://localhost:3000 \
                 npm test -- --watchAll=false --coverage --runInBand
               '''
             }
@@ -60,8 +57,8 @@ pipeline {
         stage('Frontend Tests') {
           steps {
             dir('frontend') {
-              sh 'npm test -- --watchAll=false --coverage' 
-              }
+              sh 'npm test -- --watchAll=false --coverage'
+            }
           }
         }
       }
