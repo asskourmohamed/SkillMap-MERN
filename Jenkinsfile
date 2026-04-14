@@ -51,7 +51,7 @@ pipeline {
                 PORT=5001 \
                 JWT_EXPIRE=7d \
                 CORS_ORIGIN=http://localhost:3000 \
-                npm test -- --watchAll=false --coverage
+                npm test -- --watchAll=false --coverage --runInBand
               '''
             }
           }
