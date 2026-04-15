@@ -69,7 +69,7 @@ pipeline {
         withSonarQubeEnv('SonarQube') {
           sh '''
             sonar-scanner \
-            -Dsonar.projectKey=SkillMap-MERN \
+            -Dsonar.projectKey=skillmap-mern \
             -Dsonar.sources=. \
             -Dsonar.host.url=http://sonarqube:9000 \
             -Dsonar.login=${SONAR_TOKEN}
