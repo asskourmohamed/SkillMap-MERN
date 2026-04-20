@@ -110,17 +110,17 @@ pipeline {
     success { 
       echo ’Pipeline succeeded SkillMap deployed !’
       emailext (
-        subject : " SUCCESS : SkillMap - MERN Build #${ BUILD_NUMBER }",
-        body : " Pipeline succeeded . View at ${ BUILD_URL }",
-        recipientProviders : [[ $class : ’DevelopersRecipientProvider ’]]
+        subject : " SUCCESS : SkillMap - MERN Build #${BUILD_NUMBER}",
+        body : " Pipeline succeeded . View at ${BUILD_URL}",
+        recipientProviders : [[ $class :’DevelopersRecipientProvider’]]
       )
      }
     failure { 
       echo ’Pipeline failed check logs above .’
       emailext (
         subject : " FAILURE : SkillMap - MERN Build #${ BUILD_NUMBER }",
-        body : " Pipeline failed . View at ${ BUILD_URL }",
-        recipientProviders : [[ $class : ’DevelopersRecipientProvider ’]]
+        body : " Pipeline failed . View at ${BUILD_URL}",
+        recipientProviders : [[ $class : ’DevelopersRecipientProvider’]]
       )
     }
   }
