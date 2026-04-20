@@ -8,6 +8,28 @@ const app = require('../server');
 
 let token;
 
+// Helper: register + login to get a fresh token
+async function getAuthToken() {
+  // Try registering (may already exist if cleanup didn't run)
+  await request(app).post('/api/auth/register').send({
+    name: 'Post User',
+    email: 'post@example.com',
+    password: 'password123'
+  });
+
+  // Always login to get a fresh token
+  const login = await request(app).post('/api/auth/login').send({
+    email: 'post@example.com',
+    password: 'password123'
+  });
+
+  if (!login.body.token) {
+    throw new Error(`Login failed in post.test.js: ${JSON.stringify(login.body)}`);
+  }
+
+  return login.body.token;
+}
+
 beforeAll(async () => {
   if (mongoose.connection.readyState === 0) {
     await mongoose.connect(process.env.MONGO_URI);
@@ -16,25 +38,17 @@ beforeAll(async () => {
     if (mongoose.connection.readyState === 1) return resolve();
     mongoose.connection.once('connected', resolve);
   });
+}, 30000);
 
-  // Clean up any leftover data from previous runs
+beforeEach(async () => {
+  // Clean all collections before each test
   const collections = mongoose.connection.collections;
   for (const key in collections) {
     await collections[key].deleteMany({});
   }
-
-  const res = await request(app).post('/api/auth/register').send({
-    name: 'Post User',
-    email: 'post@example.com',
-    password: 'password123'
-  });
-
-  if (!res.body.token) {
-    throw new Error(`Register failed in post.test.js: ${JSON.stringify(res.body)}`);
-  }
-
-  token = res.body.token;
-}, 30000);
+  // Always get a fresh token after cleanup
+  token = await getAuthToken();
+});
 
 afterAll(async () => {
   const collections = mongoose.connection.collections;
@@ -42,13 +56,6 @@ afterAll(async () => {
     await collections[key].deleteMany({});
   }
   await mongoose.disconnect();
-});
-
-afterEach(async () => {
-  // Only clear posts between tests, keep the user
-  if (mongoose.connection.collections['posts']) {
-    await mongoose.connection.collections['posts'].deleteMany({});
-  }
 });
 
 describe('POST /api/posts', () => {

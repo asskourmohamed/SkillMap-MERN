@@ -9,6 +9,28 @@ const app = require('../server');
 let token;
 let userId;
 
+// Helper: always register + login to get a fresh token
+async function getAuthToken() {
+  // Register (may already exist, that's fine)
+  await request(app).post('/api/auth/register').send({
+    name: 'Profile User',
+    email: 'profile@example.com',
+    password: 'password123'
+  });
+
+  // Login to get fresh token
+  const login = await request(app).post('/api/auth/login').send({
+    email: 'profile@example.com',
+    password: 'password123'
+  });
+
+  if (!login.body.token) {
+    throw new Error(`Login failed in profile.test.js: ${JSON.stringify(login.body)}`);
+  }
+
+  return { token: login.body.token, userId: login.body.data._id };
+}
+
 beforeAll(async () => {
   if (mongoose.connection.readyState === 0) {
     await mongoose.connect(process.env.MONGO_URI);
@@ -17,26 +39,19 @@ beforeAll(async () => {
     if (mongoose.connection.readyState === 1) return resolve();
     mongoose.connection.once('connected', resolve);
   });
+}, 30000);
 
-  // Clean up any leftover data from previous runs
+beforeEach(async () => {
+  // Clean all collections before each test
   const collections = mongoose.connection.collections;
   for (const key in collections) {
     await collections[key].deleteMany({});
   }
-
-  const res = await request(app).post('/api/auth/register').send({
-    name: 'Profile User',
-    email: 'profile@example.com',
-    password: 'password123'
-  });
-
-  if (!res.body.token) {
-    throw new Error(`Register failed in profile.test.js: ${JSON.stringify(res.body)}`);
-  }
-
-  token = res.body.token;
-  userId = res.body.data._id;
-}, 30000);
+  // Always re-create user and get a fresh token
+  const auth = await getAuthToken();
+  token = auth.token;
+  userId = auth.userId;
+});
 
 afterAll(async () => {
   const collections = mongoose.connection.collections;

@@ -49,7 +49,7 @@ pipeline {
                 JWT_SECRET=${JWT_SECRET_TEST} \
                 PORT=5001 \
                 JWT_EXPIRE=7d \
-                npm test -- --watchAll=false --coverage --runInBand
+                npm test -- --watchAll=false --coverage
               '''
             }
           }
@@ -57,7 +57,7 @@ pipeline {
         stage('Frontend Tests') {
           steps {
             dir('frontend') {
-              sh 'npm test -- --watchAll=false --coverage'
+              sh 'npm test -- --watchAll=false --coverage --watchAll=false'
             }
           }
         }
@@ -69,8 +69,10 @@ pipeline {
         withSonarQubeEnv('SonarQube') {
           sh '''
             sonar-scanner \
-            -Dsonar.projectKey=skillmap-mern \
-            -Dsonar.sources=. \
+            -Dsonar.projectKey=SkillMap-MERN \
+            -Dsonar.sources =backend,frontend/src \
+            -Dsonar.exclusions =**/node_modules/** ,**/build
+              /** ,**/coverage/** \
             -Dsonar.host.url=http://sonarqube:9000 \
             -Dsonar.login=${SONAR_TOKEN}
           '''
@@ -105,7 +107,21 @@ pipeline {
   }
 
   post {
-    success { echo 'Pipeline succeeded — SkillMap deployed!' }
-    failure { echo 'Pipeline failed — check logs above.' }
+    success { 
+      echo ’Pipeline succeeded SkillMap deployed !’
+      emailext (
+        subject : " SUCCESS : SkillMap - MERN Build #${ BUILD_NUMBER }",
+        body : " Pipeline succeeded . View at ${ BUILD_URL }",
+        recipientProviders : [[ $class : ’DevelopersRecipientProvider ’]]
+      )
+     }
+    failure { 
+      echo ’Pipeline failed check logs above .’
+      emailext (
+        subject : " FAILURE : SkillMap - MERN Build #${ BUILD_NUMBER }",
+        body : " Pipeline failed . View at ${ BUILD_URL }",
+        recipientProviders : [[ $class : ’DevelopersRecipientProvider ’]]
+      )
+    }
   }
 }
