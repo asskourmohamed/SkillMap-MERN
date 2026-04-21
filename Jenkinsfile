@@ -114,6 +114,7 @@ pipeline {
       emailext (
         subject: "SUCCESS: SkillMap-MERN Build #${BUILD_NUMBER}",
         body: "Pipeline succeeded. View at ${BUILD_URL}",
+        to: 'asskourmohamed1@gmail.com',
         recipientProviders: [[$class: 'DevelopersRecipientProvider']]
       )
     }
@@ -122,6 +123,7 @@ pipeline {
       emailext (
         subject: "FAILURE: SkillMap-MERN Build #${BUILD_NUMBER}",
         body: "Pipeline failed. View at ${BUILD_URL}",
+        to: 'asskourmohamed1@gmail.com',
         recipientProviders: [[$class: 'DevelopersRecipientProvider']]
       )
     }

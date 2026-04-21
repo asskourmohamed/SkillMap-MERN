@@ -34,9 +34,9 @@ services:
       - backend
     networks:
       - skillmap-net
-
 volumes:
   mongo-data:
+  jenkins_home:
 
 networks:
   skillmap-net:
