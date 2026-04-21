@@ -13,6 +13,7 @@ pipeline {
 
   tools {
     nodejs 'NodeJS-18'
+    sonarQubeScanner 'SonarScanner'
   }
 
   stages {
@@ -67,14 +68,17 @@ pipeline {
     stage('SonarQube Analysis') {
       steps {
         withSonarQubeEnv('SonarQube') {
-          sh '''
-            sonar-scanner \
-            -Dsonar.projectKey=SkillMap-MERN \
-            -Dsonar.sources=backend,frontend/src \
-            -Dsonar.exclusions=**/node_modules/**,**/build/**,**/coverage/** \
-            -Dsonar.host.url=http://sonarqube:9000 \
-            -Dsonar.login=${SONAR_TOKEN}
-          '''
+          script {
+                def scannerHome = tool 'SonarScanner'   // ← same name again
+                sh """
+                    ${scannerHome}/bin/sonar-scanner \
+                    -Dsonar.projectKey=SkillMap-MERN \
+                    -Dsonar.sources=backend,frontend/src \
+                    -Dsonar.exclusions=**/node_modules/**,**/build/**,**/coverage/** \
+                    -Dsonar.host.url=http://sonarqube:9000 \
+                    -Dsonar.login=${SONAR_TOKEN}
+                """
+          }
         }
       }
     }
