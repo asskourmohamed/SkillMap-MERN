@@ -13,7 +13,7 @@ pipeline {
 
   tools {
     nodejs 'NodeJS-18'
-    sonarQubeScanner 'SonarScanner'
+    'hudson.plugins.sonar.SonarRunnerInstallation' 'SonarScanner'
   }
 
   stages {
