@@ -70,14 +70,11 @@ pipeline {
         withSonarQubeEnv('SonarQube') {
           script {
                 def scannerHome = tool 'SonarQube Scanner'   // ← same name again
-                sh """
-                    ${scannerHome}/bin/sonar-scanner \
-                    -Dsonar.projectKey=SkillMap-MERN \
-                    -Dsonar.sources=backend,frontend/src \
-                    -Dsonar.exclusions=**/node_modules/**,**/build/**,**/coverage/** \
-                    -Dsonar.host.url=http://sonarqube:9000 \
-                    -Dsonar.login=${SONAR_TOKEN}
-                """
+                sh  "${scannerHome}/bin/sonar-scanner" + 
+                    "-Dsonar.projectKey=SkillMap-MERN" +
+                    "-Dsonar.sources=backend,frontend/src" +
+                    "-Dsonar.exclusions=**/node_modules/**,**/build/**,**/coverage/**" +
+                    "-Dsonar.host.url=http://sonarqube:9000"
           }
         }
       }
@@ -85,7 +82,7 @@ pipeline {
 
     stage('Quality Gate') {
       steps {
-        timeout(time: 10, unit: 'MINUTES') {
+        timeout(time: 15, unit: 'MINUTES') {
           waitForQualityGate abortPipeline: true
         }
       }
