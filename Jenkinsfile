@@ -70,9 +70,8 @@ pipeline {
           sh '''
             sonar-scanner \
             -Dsonar.projectKey=SkillMap-MERN \
-            -Dsonar.sources =backend,frontend/src \
-            -Dsonar.exclusions =**/node_modules/** ,**/build
-              /** ,**/coverage/** \
+            -Dsonar.sources=backend,frontend/src \
+            -Dsonar.exclusions=**/node_modules/**,**/build/**,**/coverage/** \
             -Dsonar.host.url=http://sonarqube:9000 \
             -Dsonar.login=${SONAR_TOKEN}
           '''
@@ -108,19 +107,19 @@ pipeline {
 
   post {
     success { 
-      echo ’Pipeline succeeded SkillMap deployed !’
+      echo 'Pipeline succeeded SkillMap deployed !'
       emailext (
-        subject : " SUCCESS : SkillMap - MERN Build #${BUILD_NUMBER}",
-        body : " Pipeline succeeded . View at ${BUILD_URL}",
-        recipientProviders : [[ $class :’DevelopersRecipientProvider’]]
+        subject: "SUCCESS: SkillMap-MERN Build #${BUILD_NUMBER}",
+        body: "Pipeline succeeded. View at ${BUILD_URL}",
+        recipientProviders: [[$class: 'DevelopersRecipientProvider']]
       )
-     }
+    }
     failure { 
-      echo ’Pipeline failed check logs above .’
+      echo 'Pipeline failed check logs above.'
       emailext (
-        subject : " FAILURE : SkillMap - MERN Build #${ BUILD_NUMBER }",
-        body : " Pipeline failed . View at ${BUILD_URL}",
-        recipientProviders : [[ $class : ’DevelopersRecipientProvider’]]
+        subject: "FAILURE: SkillMap-MERN Build #${BUILD_NUMBER}",
+        body: "Pipeline failed. View at ${BUILD_URL}",
+        recipientProviders: [[$class: 'DevelopersRecipientProvider']]
       )
     }
   }
