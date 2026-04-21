@@ -69,7 +69,7 @@ pipeline {
       steps {
         withSonarQubeEnv('SonarQube') {
           script {
-                def scannerHome = tool 'SonarScanner'   // ← same name again
+                def scannerHome = tool 'SonarQube Scanner'   // ← same name again
                 sh """
                     ${scannerHome}/bin/sonar-scanner \
                     -Dsonar.projectKey=SkillMap-MERN \
