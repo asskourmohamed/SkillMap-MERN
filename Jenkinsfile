@@ -76,6 +76,7 @@ pipeline {
                         -Dsonar.sources=backend,frontend/src \
                         -Dsonar.exclusions=**/node_modules/**,**/build/**,**/coverage/**  \
                         -Dsonar.host.url=http://sonarqube:9000
+                        -Dsonar.javascript.lcov.reportPaths=backend/coverage/lcov.info,frontend/coverage/lcov.info
                 """
             }
         }
