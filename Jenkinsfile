@@ -65,6 +65,18 @@ pipeline {
       }
     }
 
+    stage ( 'OWASP Dependency Check' ) {
+      steps {
+          dependencyCheck additionalArguments : '''
+              --scan backend/package.json
+              --scan frontend/package.json
+              --format HTML
+              --out dependency-check-report
+          ''', odcInstallation : 'OWASP-DC'
+          dependencyCheckPublisher pattern : 'dependency-check-report/*.html'
+      }
+  }
+
     stage('SonarQube Analysis') {
       steps {
         script {
@@ -90,6 +102,28 @@ pipeline {
         }
       }
     }
+    stage ( 'Trivy Filesystem Scan' ) {
+      steps {
+          sh '''
+              # Install Trivy if not present
+              which trivy || (
+                  curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+                  | sh -s -- -b /usr/local/bin
+              )
+
+              # Scan backend and frontend source trees
+              trivy fs --exit-code 0 --severity HIGH,CRITICAL \
+                  --format table ./backend
+              trivy fs --exit-code 0 --severity HIGH,CRITICAL \
+                  --format table ./frontend
+
+              # Also output JSON for archiving
+              trivy fs --exit-code 1 --severity CRITICAL \
+                  --format json --output trivy-fs-report.json .
+          '''
+          archiveArtifacts artifacts: 'trivy-fs-report.json', allowEmptyArchive: true
+    }
+  }
 
     stage('Docker Build & Push') {
       steps {
@@ -106,8 +140,34 @@ pipeline {
         }
       }
     }
+    stage ( 'Trivy Image Scan' ) {
+      steps {
+          sh """
+              trivy image --exit-code 0 --severity HIGH,CRITICAL \
+                  --format table \
+                  ${IMAGE_BACKEND}:${BUILD_NUMBER}
+
+              trivy image --exit-code 0 --severity HIGH,CRITICAL \
+                  --format table \
+                  ${IMAGE_FRONTEND}:${BUILD_NUMBER}
+
+              # Fail pipeline on CRITICAL CVEs in either image
+              trivy image --exit-code 1 --severity CRITICAL \
+                  --format json \
+                  --output trivy-image-backend.json \
+                  ${IMAGE_BACKEND}:${BUILD_NUMBER}
+
+              trivy image --exit-code 1 --severity CRITICAL \
+                  --format json \
+                  --output trivy-image-frontend.json \
+                  ${IMAGE_FRONTEND}:${BUILD_NUMBER}
+          """
+          archiveArtifacts artifacts: 'trivy-image-*.json', allowEmptyArchive: true
+      }
+  }
 
   }
+
 
   post {
     success { 
