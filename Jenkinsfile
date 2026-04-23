@@ -9,6 +9,7 @@ pipeline {
     SONAR_TOKEN = credentials('sonarqube-token')
     MONGO_URI_TEST = "mongodb://skillmap-mongo:27017/skillmap-test"
     JWT_SECRET_TEST = "test_secret_for_ci"
+    NVD_API_KEY = credentials('093de779-5619-408c-9479-230b0170e8cd')
   }
 
   tools {
@@ -72,6 +73,7 @@ pipeline {
               --scan frontend/package.json
               --format HTML
               --out dependency-check-report
+              --nvdApiKey ${NVD_API_KEY}
           ''', odcInstallation : 'OWASP-DC'
           dependencyCheckPublisher pattern : 'dependency-check-report/*.html'
       }
@@ -87,7 +89,7 @@ pipeline {
                         -Dsonar.projectKey=SkillMap-MERN \
                         -Dsonar.sources=backend,frontend/src \
                         -Dsonar.exclusions=**/node_modules/**,**/build/**,**/coverage/**  \
-                        -Dsonar.host.url=http://sonarqube:9000
+                        -Dsonar.host.url=http://sonarqube:9000 \
                         -Dsonar.javascript.lcov.reportPaths=backend/coverage/lcov.info,frontend/coverage/lcov.info
                 """
             }
