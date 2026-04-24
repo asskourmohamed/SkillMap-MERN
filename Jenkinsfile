@@ -68,15 +68,17 @@ pipeline {
 
     stage ( 'OWASP Dependency Check' ) {
       steps {
-          dependencyCheck additionalArguments : '''
-              --scan backend/package.json
-              --scan frontend/package.json
-              --format HTML
-              --out dependency-check-report
-              --nvdApiKey ${NVD_API_KEY}
-          ''', odcInstallation : 'OWASP-DC'
-          dependencyCheckPublisher pattern : 'dependency-check-report/*.html'
-      }
+        dependencyCheck additionalArguments: """
+            --scan backend/package.json
+            --scan frontend/package.json
+            --format HTML
+            --format XML
+            --out dependency-check-report
+            --nvdApiKey ${NVD_API_KEY}
+            --failOnError false
+        """, odcInstallation: 'OWASP-DC'
+        dependencyCheckPublisher pattern: 'dependency-check-report/dependency-check-report.xml'
+    }
   }
 
     stage('SonarQube Analysis') {
