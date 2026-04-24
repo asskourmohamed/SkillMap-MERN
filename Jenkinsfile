@@ -78,6 +78,7 @@ pipeline {
             --out dependency-check-report
             --nvdApiKey ${NVD_KEY}
             --failOnCVSS 11
+            --noupdate
         """, odcInstallation: 'OWASP-DC'
         }
         dependencyCheckPublisher pattern: 'dependency-check-report/dependency-check-report.xml'
@@ -151,6 +152,8 @@ pipeline {
     stage ( 'Trivy Image Scan' ) {
       steps {
           sh """
+              export PATH=${WORKSPACE}/.trivy:\$PATH
+
               trivy image --exit-code 0 --severity HIGH,CRITICAL \
                   --format table \
                   ${IMAGE_BACKEND}:${BUILD_NUMBER}
