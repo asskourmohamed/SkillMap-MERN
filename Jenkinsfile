@@ -68,6 +68,7 @@ pipeline {
 
     stage ( 'OWASP Dependency Check' ) {
       steps {
+        sh 'mkdir -p dependency-check-report'
         withCredentials([string(credentialsId: '093de779-5619-408c-9479-230b0170e8cd', variable: 'NVD_KEY')]) {
         dependencyCheck additionalArguments: """
             --scan backend/package.json
@@ -75,7 +76,7 @@ pipeline {
             --format HTML
             --format XML
             --out dependency-check-report
-            --nvdApiKey ${NVD_API_KEY}
+            --nvdApiKey ${NVD_KEY}
             --failOnCVSS 11
         """, odcInstallation: 'OWASP-DC'
         }
