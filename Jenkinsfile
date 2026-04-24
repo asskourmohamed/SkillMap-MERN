@@ -68,6 +68,7 @@ pipeline {
 
     stage ( 'OWASP Dependency Check' ) {
       steps {
+        withCredentials([string(credentialsId: '093de779-5619-408c-9479-230b0170e8cd', variable: 'NVD_KEY')]) {
         dependencyCheck additionalArguments: """
             --scan backend/package.json
             --scan frontend/package.json
@@ -75,7 +76,7 @@ pipeline {
             --format XML
             --out dependency-check-report
             --nvdApiKey ${NVD_API_KEY}
-            --failOnError false
+            --failOnCVSS 11
         """, odcInstallation: 'OWASP-DC'
         dependencyCheckPublisher pattern: 'dependency-check-report/dependency-check-report.xml'
     }
@@ -108,24 +109,25 @@ pipeline {
     }
     stage ( 'Trivy Filesystem Scan' ) {
       steps {
-          sh '''
-              # Install Trivy if not present
-              which trivy || (
-                  curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
-                  | sh -s -- -b /usr/local/bin
-              )
+        sh '''
+            export TRIVY_HOME=${WORKSPACE}/.trivy
+            mkdir -p ${TRIVY_HOME}
 
-              # Scan backend and frontend source trees
-              trivy fs --exit-code 0 --severity HIGH,CRITICAL \
-                  --format table ./backend
-              trivy fs --exit-code 0 --severity HIGH,CRITICAL \
-                  --format table ./frontend
+            which trivy || {
+                curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+                | sh -s -- -b ${TRIVY_HOME}
+            }
 
-              # Also output JSON for archiving
-              trivy fs --exit-code 1 --severity CRITICAL \
-                  --format json --output trivy-fs-report.json .
-          '''
-          archiveArtifacts artifacts: 'trivy-fs-report.json', allowEmptyArchive: true
+            export PATH=${TRIVY_HOME}:$PATH
+
+            trivy fs --exit-code 0 --severity HIGH,CRITICAL \
+                --format table ./backend
+            trivy fs --exit-code 0 --severity HIGH,CRITICAL \
+                --format table ./frontend
+            trivy fs --exit-code 0 --severity CRITICAL \
+                --format json --output trivy-fs-report.json .
+        '''
+        archiveArtifacts artifacts: 'trivy-fs-report.json', allowEmptyArchive: true
     }
   }
 
