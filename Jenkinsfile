@@ -78,6 +78,7 @@ pipeline {
             --nvdApiKey ${NVD_API_KEY}
             --failOnCVSS 11
         """, odcInstallation: 'OWASP-DC'
+        }
         dependencyCheckPublisher pattern: 'dependency-check-report/dependency-check-report.xml'
     }
   }
