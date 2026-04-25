@@ -178,7 +178,7 @@ pipeline {
   }
     stage('Trigger CD Job') {
       steps {
-          build job: 'skillmap-mern-cd',
+          build job: 'skillmap-mern-CD',
               parameters: [
                   string(name: 'IMAGE_TAG', value: "${BUILD_NUMBER}")
               ],

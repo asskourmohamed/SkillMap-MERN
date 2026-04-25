@@ -9,7 +9,7 @@ pipeline {
     environment {
         GITOPS_REPO = "https://github.com/asskourmohamed/SkillMap-MERN-GitOps"
         GIT_USER = "asskourmohamed"
-        GIT_EMAIL = "asskourmohamed@example.com"
+        GIT_EMAIL = "asskourmohamed1@gmail.com"
     }
 
     stages {
