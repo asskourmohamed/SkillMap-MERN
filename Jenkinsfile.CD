@@ -1,0 +1,77 @@
+pipeline {
+    agent any
+
+    parameters {
+        string(name: 'IMAGE_TAG', defaultValue: 'latest',
+            description: 'Docker image tag produced by CI job')
+    }
+
+    environment {
+        GITOPS_REPO = "https://github.com/asskourmohamed/SkillMap-MERN-GitOps"
+        GIT_USER = "asskourmohamed"
+        GIT_EMAIL = "asskourmohamed@example.com"
+    }
+
+    stages {
+
+        stage('Clone GitOps Repo') {
+            steps {
+                sshagent(['github-ssh']) {
+                    sh """
+                        rm -rf gitops
+                        git clone ${GITOPS_REPO} gitops
+                    """
+                }
+            }
+        }
+
+        stage('Update Image Tag') {
+            steps {
+                sh """
+                    cd gitops/helm/skillmap/
+
+                    # Patch backend image tag
+                    sed -i 's/^tag:.*/tag: "${params.IMAGE_TAG}"/' \
+                    values.yaml
+
+                    # Verify the change
+                    grep 'tag:' values.yaml
+                """
+            }
+        }
+
+        stage('Commit & Push') {
+            steps {
+                sshagent(['github-ssh']) {
+                    sh """
+                        cd gitops
+                        git config user.name "${GIT_USER}"
+                        git config user.email "${GIT_EMAIL}"
+                        git add helm/skillmap/values.yaml
+                        git commit -m "ci: update image tag to ${params.IMAGE_TAG} [skip ci]"
+                        git push origin main
+                    """
+                }
+            }
+        }
+
+    }
+
+    post {
+        success {
+            emailext(
+                subject: "SUCCESS: SkillMap-MERN CD tag ${params.IMAGE_TAG} pushed",
+                body: "GitOps repo updated. ArgoCD will sync shortly. ${BUILD_URL}",
+                recipientProviders: [[$class: 'DevelopersRecipientProvider']]
+            )
+        }
+
+        failure {
+            emailext(
+                subject: "FAILURE: SkillMap-MERN CD Build #${BUILD_NUMBER}",
+                body: "CD pipeline failed. View logs at: ${BUILD_URL}",
+                recipientProviders: [[$class: 'DevelopersRecipientProvider']]
+            )
+        }
+    }
+}

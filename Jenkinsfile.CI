@@ -176,7 +176,15 @@ pipeline {
           archiveArtifacts artifacts: 'trivy-image-*.json', allowEmptyArchive: true
       }
   }
-
+    stage('Trigger CD Job') {
+      steps {
+          build job: 'skillmap-mern-cd',
+              parameters: [
+                  string(name: 'IMAGE_TAG', value: "${BUILD_NUMBER}")
+              ],
+              wait: false
+      }
+    }
   }
 
 
