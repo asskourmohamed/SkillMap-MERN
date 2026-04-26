@@ -63,14 +63,14 @@ pipeline {
             emailext(
                 subject: "SUCCESS: SkillMap-MERN CD tag ${params.IMAGE_TAG} pushed",
                 body: "GitOps repo updated. ArgoCD will sync shortly. ${BUILD_URL}",
-                recipientProviders: [[$class: 'DevelopersRecipientProvider']]
+                to: 'asskourmohamed1@gmail.com'
             )
         }
         failure {
             emailext(
                 subject: "FAILURE: SkillMap-MERN CD Build #${BUILD_NUMBER}",
                 body: "CD pipeline failed. View logs at: ${BUILD_URL}",
-                recipientProviders: [[$class: 'DevelopersRecipientProvider']]
+                to: 'asskourmohamed1@gmail.com'
             )
         }
     }
