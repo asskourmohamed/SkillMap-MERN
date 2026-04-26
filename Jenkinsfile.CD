@@ -31,7 +31,11 @@ pipeline {
             steps {
                 sh """
                     cd gitops/helm/skillmap/
-                    sed -i 's/^  tag:.*\$/  tag: "${params.IMAGE_TAG}"/' values.yaml
+
+                    # Replace tag value (4 spaces indent), strip inline comments too
+                    sed -i 's/^    tag:.*\$/    tag: "${params.IMAGE_TAG}"/' values.yaml
+
+                    # Verify both lines changed
                     grep 'tag:' values.yaml
                 """
             }
