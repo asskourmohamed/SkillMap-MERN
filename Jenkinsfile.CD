@@ -8,18 +8,21 @@ pipeline {
 
     environment {
         GITOPS_REPO = "https://github.com/asskourmohamed/SkillMap-MERN-GitOps"
-        GIT_USER = "asskourmohamed"
-        GIT_EMAIL = "asskourmohamed1@gmail.com"
+        GIT_EMAIL   = "asskourmohamed1@gmail.com"
     }
 
     stages {
 
         stage('Clone GitOps Repo') {
             steps {
-                sshagent(['github-ssh']) {
+                withCredentials([usernamePassword(
+                    credentialsId: 'github-creds',
+                    usernameVariable: 'GIT_USER',
+                    passwordVariable: 'GIT_TOKEN'
+                )]) {
                     sh """
                         rm -rf gitops
-                        git clone ${GITOPS_REPO} gitops
+                        git clone https://\${GIT_USER}:\${GIT_TOKEN}@github.com/asskourmohamed/SkillMap-MERN-GitOps.git gitops
                     """
                 }
             }
@@ -30,9 +33,8 @@ pipeline {
                 sh """
                     cd gitops/helm/skillmap/
 
-                    # Patch backend image tag
-                    sed -i 's/^tag:.*/tag: "${params.IMAGE_TAG}"/' \
-                    values.yaml
+                    # Patch both backend and frontend image tags
+                    sed -i 's/^  tag:.*$/  tag: "${params.IMAGE_TAG}"/' values.yaml
 
                     # Verify the change
                     grep 'tag:' values.yaml
@@ -42,14 +44,18 @@ pipeline {
 
         stage('Commit & Push') {
             steps {
-                sshagent(['github-ssh']) {
+                withCredentials([usernamePassword(
+                    credentialsId: 'github-creds',
+                    usernameVariable: 'GIT_USER',
+                    passwordVariable: 'GIT_TOKEN'
+                )]) {
                     sh """
                         cd gitops
-                        git config user.name "${GIT_USER}"
+                        git config user.name "\${GIT_USER}"
                         git config user.email "${GIT_EMAIL}"
                         git add helm/skillmap/values.yaml
                         git commit -m "ci: update image tag to ${params.IMAGE_TAG} [skip ci]"
-                        git push origin main
+                        git push https://\${GIT_USER}:\${GIT_TOKEN}@github.com/asskourmohamed/SkillMap-MERN-GitOps.git main
                     """
                 }
             }
@@ -65,7 +71,6 @@ pipeline {
                 recipientProviders: [[$class: 'DevelopersRecipientProvider']]
             )
         }
-
         failure {
             emailext(
                 subject: "FAILURE: SkillMap-MERN CD Build #${BUILD_NUMBER}",
