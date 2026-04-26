@@ -53,6 +53,7 @@ pipeline {
                         git config user.name "\$GIT_USER"
                         git config user.email "${GIT_EMAIL}"
                         git add helm/skillmap/values.yaml
+                        git diff --cached --quiet && echo "Nothing to commit, tag already up to date" && exit 0
                         git commit -m "ci: update image tag to ${params.IMAGE_TAG} [skip ci]"
                         git push https://\$GIT_USER:\$GIT_TOKEN@github.com/asskourmohamed/SkillMap-MERN-GitOps.git main
                     """
