@@ -60,7 +60,6 @@ const AdminDashboard = () => {
       ? usersRes.data.data
       : usersRes.data?.data?.users || [];
 
-    // Skills response: { success, data: [...] }
     const skillsList = Array.isArray(skillsRes.data?.data)
       ? skillsRes.data.data
       : [];
