@@ -64,7 +64,6 @@ const AdminDashboard = () => {
       ? skillsRes.data.data
       : [];
 
-    // Use dashboard stats directly — they're already correct
     setStats({
       stats: dashboardData?.stats,
       recentUsers: dashboardData?.recentUsers || [],
