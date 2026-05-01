@@ -26,7 +26,6 @@ const AdminDashboard = () => {
     fetchAdminData();
   }, [navigate]);
 
-  // Fonction pour extraire les top compétences
   const getTopSkills = (skills) => {
     if (!skills || !Array.isArray(skills)) {
       return [];
@@ -56,9 +55,7 @@ const AdminDashboard = () => {
       adminApi.getSkills(),
     ]);
 
-    // Dashboard response: { success, data: { stats, recentUsers } }
     const dashboardData = dashboardRes.data?.data;
-    // Users response: { success, data: { users: [...] } } or || ou { success, data: [...] }
     const usersList = Array.isArray(usersRes.data?.data)
       ? usersRes.data.data
       : usersRes.data?.data?.users || [];
