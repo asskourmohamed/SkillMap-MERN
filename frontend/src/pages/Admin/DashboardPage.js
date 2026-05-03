@@ -96,7 +96,7 @@ const handleCardClick = (cardId) => {
       break;
     case 'mentorships':
       console.log('Voir les mentorats');
-      // Naviguer vers la page des mentorats
+      // Naviguer vers la page
       break;
     case 'engagement':
       console.log('Voir les statistiques détaillées');
