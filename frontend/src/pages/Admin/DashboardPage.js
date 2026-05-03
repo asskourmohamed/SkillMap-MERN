@@ -107,7 +107,6 @@ const handleCardClick = (cardId) => {
 
 const handleSkillClick = (skill) => {
   console.log('Détails de la compétence:', skill);
-  // Ouvrir modal avec détails de la compétence
   alert(`Compétence: ${skill.skill}\nDemande: ${skill.demand}\nOffre: ${skill.supply}`);
 };
 export default DashboardPage;
