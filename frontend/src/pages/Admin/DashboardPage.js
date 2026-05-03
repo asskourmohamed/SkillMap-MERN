@@ -85,7 +85,7 @@ const DashboardPage = () => {
     </div>
   );
 };
-// Ajoute ces fonctions dans le composant
+
 const handleCardClick = (cardId) => {
   switch(cardId) {
     case 'users':
