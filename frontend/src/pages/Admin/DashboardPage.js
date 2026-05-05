@@ -50,7 +50,7 @@ const DashboardPage = () => {
     return <div>Chargement...</div>;
   }
 
-  //  Debug - voir ce qui est passé au Header et Sidebar
+  //  Debug - voir ce qui est passé au Header 
   console.log('Passage à Header/Sidebar - user:', user);
 
   const stats = {
