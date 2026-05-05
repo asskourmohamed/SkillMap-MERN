@@ -25,7 +25,6 @@ const DashboardPage = () => {
       
       setUser(storedUser);
 
-      // Récupérer les 
       const [mentorshipsData, skillsData] = await Promise.all([
         mentorshipAPI.getMyMentorships().catch(() => []),
         skillAPI.getAll().catch(() => [])
