@@ -18,7 +18,6 @@ const DashboardPage = () => {
 
   const fetchDashboardData = async () => {
     try {
-      // 🔴 Récupérer
       const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
       console.log('Utilisateur depuis localStorage:', storedUser);
       console.log('Rôle utilisateur:', storedUser.role);
