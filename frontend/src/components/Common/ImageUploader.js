@@ -32,7 +32,6 @@ const ImageUploader = ({
     const file = e.target.files[0];
     if (!file) return;
 
-    // Réinitialise
     setError(null);
 
     // Validation du type
