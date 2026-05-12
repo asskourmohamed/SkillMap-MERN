@@ -34,7 +34,7 @@ const ImageUploader = ({
 
     setError(null);
 
-    // Validation
+    // Valid
     if (!acceptedTypes.includes(file.type)) {
       setError(`Format non supporté. Formats acceptés: ${acceptedTypes.map(t => t.split('/')[1]).join(', ')}`);
       return;
