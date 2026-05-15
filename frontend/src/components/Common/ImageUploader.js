@@ -39,7 +39,7 @@ const ImageUploader = ({
       return;
     }
 
-    // Valxx
+    // Val
     if (file.size > maxSize * 1024 * 1024) {
       setError(`L'image ne doit pas dépasser ${maxSize}MB`);
       return;
