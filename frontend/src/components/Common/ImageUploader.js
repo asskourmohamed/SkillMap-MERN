@@ -52,7 +52,7 @@ const ImageUploader = ({
     };
     reader.readAsDataURL(file);
 
-    // Appeler la fonction de callback pour l'upload
+    // Appeler la fonction de callback pour 
     onUpload(file);
   };
 
