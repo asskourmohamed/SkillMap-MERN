@@ -21,7 +21,7 @@ const SkillGapsTable = ({ skillGaps }) => {
     );
   }
 
-  // Grouper les
+  // Grouper
   const skillMap = new Map();
 
   skillsArray.forEach(skill => {
