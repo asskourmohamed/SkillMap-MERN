@@ -21,7 +21,7 @@ const SkillGapsTable = ({ skillGaps }) => {
     );
   }
 
-  // Grou
+  // Grouer les compétences par titre et calculer le nombre d'utilisateurs pour chaque compétence
   const skillMap = new Map();
 
   skillsArray.forEach(skill => {
