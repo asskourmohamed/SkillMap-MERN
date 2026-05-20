@@ -1,7 +1,7 @@
 import React from 'react';
 
 const SkillGapsTable = ({ skillGaps }) => {
-  // Ensure we always work with an array
+  // Ensure we always work with an
   const skillsArray = Array.isArray(skillGaps)
     ? skillGaps
     : Array.isArray(skillGaps?.data)
